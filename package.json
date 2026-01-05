@@ -12,13 +12,18 @@
   "dependencies": {
     "@kinde-oss/kinde-auth-react": "^5.10.1",
     "@sqlite.org/sqlite-wasm": "^3.51.1-build2",
-    "framer-motion": "^12.23.26",
-    "idb": "^8.0.3",
-    "lucide-react": "^0.562.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^6.30.2",
-    "vite-plugin-pwa": "^1.2.0"
+    "framer-motion": "^12.0.0",
+    "lucide-react": "^0.469.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1",
+    "sqlite3": "^5.1.7"
+  },
+  "serverDependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
