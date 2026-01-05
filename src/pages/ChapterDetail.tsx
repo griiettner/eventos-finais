@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { chapters } from '../data/chapters';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Play, Pause, Type, Moon, Sun, Book, Save, CheckCircle, Volume2 } from 'lucide-react';
+import { ChevronLeft, Play, Pause, Type, Moon, Sun, Book, Save, Volume2, CheckCircle2, X } from 'lucide-react';
 import { DBService } from '../db/db-service';
 
 interface AnswerRow {
@@ -21,6 +21,7 @@ const ChapterDetail: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(searchParams.get('autoPlay') === 'true');
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [isSaved, setIsSaved] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -39,6 +40,13 @@ const ChapterDetail: React.FC = () => {
       }, {});
       setAnswers(savedAnswers);
 
+      // Load completion status
+      const progress = await DBService.get<{ is_completed: number }>(
+        'SELECT is_completed FROM progress WHERE chapter_id = ?',
+        [chapter.id]
+      );
+      setIsCompleted(progress?.is_completed === 1);
+
       // Mark as read when opened
       await DBService.exec('INSERT OR REPLACE INTO progress (chapter_id, is_read) VALUES (?, 1)', [chapter.id]);
     };
@@ -46,6 +54,19 @@ const ChapterDetail: React.FC = () => {
   }, [chapter]);
 
   if (!chapter) return <div>Capítulo não encontrado</div>;
+
+  const handleToggleCompletion = async () => {
+    try {
+      const newState = !isCompleted;
+      await DBService.exec(
+        'UPDATE progress SET is_completed = ?, completed_at = ? WHERE chapter_id = ?',
+        [newState ? 1 : 0, newState ? new Date().toISOString() : null, chapter.id]
+      );
+      setIsCompleted(newState);
+    } catch (error) {
+      console.error('Failed to toggle completion:', error);
+    }
+  };
 
   const handleSaveAnswers = async () => {
     for (const [qId, text] of Object.entries(answers)) {
@@ -143,135 +164,36 @@ const ChapterDetail: React.FC = () => {
             ))}
           </div>
 
-          <button onClick={handleSaveAnswers} className='btn-primary save-btn'>
-            {isSaved ? (
-              <>
-                <CheckCircle size={20} /> Salvo
-              </>
-            ) : (
-              <>
-                <Save size={20} /> Salvar Respostas
-              </>
-            )}
-          </button>
+          <div className='action-buttons'>
+            <button onClick={handleSaveAnswers} className='btn-primary save-btn'>
+              {isSaved ? (
+                <>
+                  <CheckCircle2 size={20} /> Salvo
+                </>
+              ) : (
+                <>
+                  <Save size={20} /> Salvar Respostas
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleToggleCompletion}
+              className={`btn-complete-lesson ${isCompleted ? 'completed' : ''}`}
+            >
+              {isCompleted ? (
+                <>
+                  <X size={20} /> Desfazer Conclusão
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={20} /> Concluir Estudo
+                </>
+              )}
+            </button>
+          </div>
         </section>
       </main>
-
-      <style>{`
-        .chapter-detail-layout {
-          min-height: 100vh;
-          padding-top: 100px;
-          padding-bottom: 50px;
-          transition: background 0.5s ease;
-        }
-        .theme-dark { background: #0a0a0a; --text: #e0e0e0; }
-        .theme-sepia { background: #f4ecd8; --text: #433422; --primary: #8b5a2b; }
-        .theme-light { background: #ffffff; --text: #222222; --primary: #333333; }
-
-        .theme-sepia h2, .theme-sepia h3, .theme-sepia h4, .theme-sepia span { color: #433422; }
-        .theme-light h2, .theme-light h3, .theme-light h4, .theme-light span { color: #222; }
-
-        .detail-header {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 80px;
-          display: flex;
-          align-items: center;
-          padding: 0 1rem;
-          justify-content: space-between;
-          z-index: 1000;
-        }
-        .header-title { text-align: center; }
-        .header-title span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); font-weight: 700; }
-        .header-title h2 { font-size: 1.1rem; margin: 0; }
-        
-        .header-controls { display: flex; gap: 0.5rem; }
-        .control-btn, .back-btn {
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          color: var(--text);
-          background: rgba(255,255,255,0.05);
-        }
-        .theme-sepia .control-btn, .theme-sepia .back-btn { background: rgba(0,0,0,0.05); }
-
-        .reading-container {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 0 1.5rem;
-        }
-        .reading-content {
-          line-height: 1.8;
-          margin-bottom: 4rem;
-          color: var(--text);
-        }
-        .text-placeholder {
-          margin-top: 2rem;
-          padding: 2rem;
-          border-left: 2px solid var(--primary);
-          font-style: italic;
-          opacity: 0.8;
-        }
-
-        .audio-player-section {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 2rem;
-          padding: 1.2rem;
-        }
-        .player-info h4 { margin: 0; }
-        .player-info p { margin: 0; font-size: 0.8rem; color: var(--text-dim); }
-        .play-btn {
-          width: 56px;
-          height: 56px;
-          background: var(--primary);
-          color: #000;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: var(--transition);
-        }
-        .play-btn:hover { transform: scale(1.1); box-shadow: 0 0 20px var(--primary-glow); }
-
-        .study-questions {
-          margin-top: 3rem;
-        }
-        .study-questions h3 { margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
-        .study-questions p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 2rem; }
-        
-        .questions-list { display: flex; flex-direction: column; gap: 1.8rem; }
-        .question-item { display: flex; flex-direction: column; gap: 0.8rem; }
-        .question-item label { font-weight: 600; font-size: 1rem; color: var(--text); }
-        .question-item textarea {
-          background: rgba(0,0,0,0.2);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          padding: 1rem;
-          color: var(--text);
-          font-family: inherit;
-          font-size: 1rem;
-          min-height: 100px;
-          resize: vertical;
-        }
-        .theme-sepia .question-item textarea, .theme-light .question-item textarea {
-           background: rgba(255,255,255,0.5);
-           border-color: rgba(0,0,0,0.1);
-        }
-
-        .save-btn { margin-top: 2rem; width: 100%; }
-
-        @media (max-width: 600px) {
-          .header-title h2 { font-size: 0.9rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-          .reading-content { line-height: 1.6; }
-        }
-      `}</style>
     </div>
   );
 };

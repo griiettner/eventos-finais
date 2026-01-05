@@ -6,17 +6,39 @@ import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import ChapterDetail from './pages/ChapterDetail';
 import LoginPage from './pages/LoginPage';
-import VerificationPage from './pages/VerificationPage';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminRoute from './components/AdminRoute';
 import { AnimatePresence } from 'framer-motion';
 import SyncManager from './components/SyncManager';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
 
-  if (loading) return <div className='loading-screen'>Carregando...</div>;
-  if (!user) return <Navigate to='/login' />;
-  if (!user.isVerified) return <Navigate to='/verify' />;
+  console.log('[ProtectedRoute] loading:', loading, 'user:', user);
 
+  if (loading)
+    return (
+      <div
+        className='loading-screen'
+        style={{
+          display: 'flex',
+          height: '100vh',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#0a0a0a',
+          color: 'var(--primary)',
+        }}
+      >
+        Carregando...
+      </div>
+    );
+
+  if (!user) {
+    console.log('[ProtectedRoute] No user, redirecting to login');
+    return <Navigate to='/login' />;
+  }
+
+  console.log('[ProtectedRoute] User authenticated, rendering protected content');
   return <>{children}</>;
 };
 
@@ -27,7 +49,6 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path='/' element={<LandingPage />} />
           <Route path='/login' element={<LoginPage />} />
-          <Route path='/verify' element={<VerificationPage />} />
           <Route
             path='/dashboard'
             element={
@@ -42,6 +63,14 @@ const AppContent: React.FC = () => {
               <ProtectedRoute>
                 <ChapterDetail />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/admin'
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
             }
           />
         </Routes>

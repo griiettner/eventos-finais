@@ -73,33 +73,6 @@ const SyncManager: React.FC = () => {
           ? `Sincronizado ${lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
           : 'Online'}
       </span>
-
-      <style>{`
-        .sync-status-indicator {
-          position: fixed;
-          bottom: 1.5rem;
-          right: 1.5rem;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: rgba(0,0,0,0.6);
-          backdrop-filter: blur(10px);
-          padding: 0.5rem 1rem;
-          border-radius: 50px;
-          border: 1px solid var(--glass-border);
-          font-size: 0.75rem;
-          color: var(--text-dim);
-          z-index: 2000;
-          pointer-events: none;
-        }
-        .spin {
-          animation: spin 2s linear infinite;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
