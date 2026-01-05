@@ -71,10 +71,51 @@ const initDB = async () => {
         is_verified INTEGER DEFAULT 0,
         is_admin INTEGER DEFAULT 0
       );
+
+      CREATE TABLE IF NOT EXISTS chapter_pages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chapter_id INTEGER NOT NULL,
+        subtitle TEXT,
+        page_number INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        order_index INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS page_read_progress (
+        chapter_id INTEGER NOT NULL,
+        page_id INTEGER NOT NULL,
+        is_read INTEGER DEFAULT 0,
+        read_at TIMESTAMP NULL,
+        PRIMARY KEY (chapter_id, page_id),
+        FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,
+        FOREIGN KEY (page_id) REFERENCES chapter_pages(id) ON DELETE CASCADE
+      );
     `);
 
     // Run migrations for existing databases (add missing columns)
     try {
+      // Check if summary and timestamp columns exist in chapters table
+      const chaptersColumns = db.selectObjects("PRAGMA table_info(chapters)");
+      const hasSummary = chaptersColumns.some((col: { name: string }) => col.name === 'summary');
+      const hasCreatedAt = chaptersColumns.some((col: { name: string }) => col.name === 'created_at');
+      const hasUpdatedAt = chaptersColumns.some((col: { name: string }) => col.name === 'updated_at');
+      
+      if (!hasSummary) {
+        log('Adding summary column to chapters table');
+        db.exec("ALTER TABLE chapters ADD COLUMN summary TEXT");
+      }
+      if (!hasCreatedAt) {
+        log('Adding created_at column to chapters table');
+        db.exec("ALTER TABLE chapters ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+      }
+      if (!hasUpdatedAt) {
+        log('Adding updated_at column to chapters table');
+        db.exec("ALTER TABLE chapters ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+      }
+
       // Check if is_completed column exists in progress table
       const progressColumns = db.selectObjects("PRAGMA table_info(progress)");
       const hasIsCompleted = progressColumns.some((col: { name: string }) => col.name === 'is_completed');
@@ -120,12 +161,14 @@ onmessage = async (e) => {
   try {
     switch (type) {
       case 'exec': {
-        const result = db.exec(payload.sql, {
+        db.exec(payload.sql, {
           bind: payload.params,
           returnValue: 'resultRows',
           columnNames: [],
         });
-        postMessage({ id, type: 'SUCCESS', result });
+        // Return lastInsertRowid for INSERT operations
+        const lastInsertRowid = db.selectValue('SELECT last_insert_rowid()');
+        postMessage({ id, type: 'SUCCESS', result: { lastInsertRowid } });
         break;
       }
 

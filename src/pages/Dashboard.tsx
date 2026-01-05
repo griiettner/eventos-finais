@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { chapters } from '../data/chapters';
 import { motion } from 'framer-motion';
 import { BookOpen, Play, CheckCircle2 } from 'lucide-react';
 import { DBService } from '../db/db-service';
@@ -13,19 +12,39 @@ interface ProgressRow {
   completed_at?: string;
 }
 
+interface ChapterRow {
+  id: number;
+  title: string;
+  summary: string;
+  order_index: number;
+}
+
 const Dashboard: React.FC = () => {
+  const [chapters, setChapters] = useState<ChapterRow[]>([]);
   const [completedLessons, setCompletedLessons] = useState<Record<number, boolean>>({});
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProgress = async () => {
-      const rows = await DBService.getAll<ProgressRow>('SELECT chapter_id, is_completed FROM progress');
-      const completedMap = rows.reduce((acc: Record<number, boolean>, row: ProgressRow) => {
-        acc[row.chapter_id] = !!row.is_completed;
-        return acc;
-      }, {});
-      setCompletedLessons(completedMap);
+    const fetchData = async () => {
+      try {
+        // Load chapters from database
+        const chaptersData = await DBService.getAll<ChapterRow>('SELECT id, title, summary, order_index FROM chapters ORDER BY order_index');
+        setChapters(chaptersData);
+
+        // Load progress
+        const rows = await DBService.getAll<ProgressRow>('SELECT chapter_id, is_completed FROM progress');
+        const completedMap = rows.reduce((acc: Record<number, boolean>, row: ProgressRow) => {
+          acc[row.chapter_id] = !!row.is_completed;
+          return acc;
+        }, {});
+        setCompletedLessons(completedMap);
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    fetchProgress();
+    fetchData();
   }, []);
 
   const handleProfileUpdate = async (userData: { username: string; email: string }) => {
@@ -39,6 +58,25 @@ const Dashboard: React.FC = () => {
       console.error('Failed to update profile:', error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className='dashboard-layout'>
+        <header className='glass main-header'>
+          <div className='header-content'>
+            <div className="header-user-group">
+              <UserMenu onProfileUpdate={handleProfileUpdate} />
+            </div>
+          </div>
+        </header>
+        <main className='container'>
+          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-dim)' }}>
+            Carregando capítulos...
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className='dashboard-layout'>
@@ -56,13 +94,20 @@ const Dashboard: React.FC = () => {
           <p>Explore os 20 capítulos fundamentais sobre os últimos dias da história terrestre.</p>
         </section>
 
-        <div className='chapters-grid'>
-          {chapters
+        {chapters.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem' }}>
+            <BookOpen size={64} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
+            <h2 style={{ color: 'var(--text-dim)', marginBottom: '0.5rem' }}>Nenhum capítulo disponível</h2>
+            <p style={{ color: 'var(--text-dim)' }}>Os capítulos serão adicionados pelo administrador em breve.</p>
+          </div>
+        ) : (
+          <div className='chapters-grid'>
+            {chapters
             .sort((a, b) => {
               // Sort by completion status: incomplete first, then completed
               const aCompleted = completedLessons[a.id] || false;
               const bCompleted = completedLessons[b.id] || false;
-              if (aCompleted === bCompleted) return a.id - b.id; // Keep original order for same status
+              if (aCompleted === bCompleted) return a.order_index - b.order_index; // Sort by chapter number
               return aCompleted ? 1 : -1; // Incomplete first
             })
             .map((chapter, index) => (
@@ -73,7 +118,7 @@ const Dashboard: React.FC = () => {
                 transition={{ delay: index * 0.05 }}
                 className={`card chapter-card ${completedLessons[chapter.id] ? 'completed' : ''}`}
               >
-                <div className='chapter-number'>{chapter.id}</div>
+                <div className='chapter-number'>{chapter.order_index}</div>
                 <div className='chapter-content'>
                   <h3>{chapter.title}</h3>
                   <p>{chapter.summary}</p>
@@ -94,7 +139,8 @@ const Dashboard: React.FC = () => {
                 )}
               </motion.div>
             ))}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import ChapterDetail from './pages/ChapterDetail';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
+import AddEditChapter from './pages/AddEditChapter';
 import AdminRoute from './components/AdminRoute';
 import { AnimatePresence } from 'framer-motion';
 import SyncManager from './components/SyncManager';
@@ -70,6 +71,22 @@ const AppContent: React.FC = () => {
             element={
               <AdminRoute>
                 <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path='/admin/chapter/new'
+            element={
+              <AdminRoute>
+                <AddEditChapter />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path='/admin/chapter/:id'
+            element={
+              <AdminRoute>
+                <AddEditChapter />
               </AdminRoute>
             }
           />
