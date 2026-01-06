@@ -10,6 +10,12 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.svg', 'logo.png'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true
+      },
       manifest: {
         name: 'Estudos Eventos Finais',
         short_name: 'Eventos Finais',
