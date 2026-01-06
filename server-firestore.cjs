@@ -32,16 +32,25 @@ try {
     });
   } catch (fileError) {
     // Fall back to environment variables
+    console.log('[Firebase Init] Checking environment variables...');
+    console.log('[Firebase Init] Has FIREBASE_PROJECT_ID:', !!process.env.FIREBASE_PROJECT_ID);
+    console.log('[Firebase Init] Has FIREBASE_CLIENT_EMAIL:', !!process.env.FIREBASE_CLIENT_EMAIL);
+    console.log('[Firebase Init] Has FIREBASE_PRIVATE_KEY:', !!process.env.FIREBASE_PRIVATE_KEY);
+    
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
       // Handle multiple private key formats
       let privateKey = process.env.FIREBASE_PRIVATE_KEY;
       
+      console.log('[Firebase Init] Original key preview:', privateKey.substring(0, 50) + '...');
+      
       // If the key doesn't start with -----BEGIN, it might be base64 encoded
       if (!privateKey.includes('-----BEGIN')) {
+        console.log('[Firebase Init] Key does not contain BEGIN marker, trying base64 decode...');
         try {
           privateKey = Buffer.from(privateKey, 'base64').toString('utf8');
+          console.log('[Firebase Init] Base64 decoded successfully');
         } catch (e) {
-          console.error('Failed to decode base64 private key');
+          console.error('[Firebase Init] Failed to decode base64 private key:', e.message);
         }
       }
       
@@ -52,7 +61,13 @@ try {
       if (!privateKey.endsWith('\n')) {
         privateKey += '\n';
       }
-    
+      
+      console.log('[Firebase Init] Private key format check:', {
+        startsWithBegin: privateKey.startsWith('-----BEGIN'),
+        endsWithEnd: privateKey.includes('-----END'),
+        length: privateKey.length,
+        firstLine: privateKey.split('\n')[0]
+      });
       
       admin.initializeApp({
         credential: admin.credential.cert({
@@ -61,7 +76,9 @@ try {
           privateKey: privateKey
         })
       });
+      console.log('[Firebase Init] Successfully initialized with environment variables');
     } else {
+      console.error('[Firebase Init] Missing required environment variables');
       throw new Error('Neither service account file nor required environment variables found');
     }
   }
