@@ -52,11 +52,24 @@ export function setAuthTokenGetter(getter: () => Promise<string>) {
 }
 
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getAccessToken ? await getAccessToken() : null;
+  let token = null;
+  if (getAccessToken) {
+    try {
+      token = await getAccessToken();
+    } catch (e) {
+      console.error(`[AdminService] apiCall ${endpoint} - error getting token:`, e);
+    }
+  }
+  
+  if (!token) {
+    // Se não há token, lançamos um erro silencioso que pode ser ignorado pelos componentes
+    // que já lidam com o estado de loading da autenticação.
+    throw new Error('AUTH_INITIALIZING');
+  }
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    'Authorization': `Bearer ${token}`,
     ...options.headers
   };
 
@@ -232,14 +245,33 @@ export class AdminService {
     await apiCall(`/api/pages/${id}`, { method: 'DELETE' });
   }
 
-  // Note: Page read progress is now handled through /api/progress endpoint
-  static async markPageAsRead(): Promise<void> {
-    // Would use /api/progress endpoint
-    throw new Error('Mark page as read not implemented in API yet');
+  // Page read progress handling
+  static async markPageAsRead(chapterId: string, pageId: string): Promise<void> {
+    await apiCall('/api/progress/page', {
+      method: 'POST',
+      body: JSON.stringify({ chapterId, pageId, isRead: true })
+    });
   }
 
-  static async getPageReadProgress(): Promise<{ page_id: string; is_read: boolean }[]> {
-    // Would use /api/progress endpoint
-    return [];
+  static async getPageReadProgress(chapterId: string): Promise<{ page_id: string; is_read: boolean }[]> {
+    const progress = await apiCall<{ pageId: string; isRead: boolean }[]>(`/api/chapters/${chapterId}/progress/pages`);
+    return progress.map(p => ({
+      page_id: p.pageId,
+      is_read: p.isRead
+    }));
+  }
+
+  static async getChapterProgress(chapterId: string): Promise<{ is_completed: boolean }> {
+    const progress = await apiCall<{ isCompleted: boolean }>(`/api/chapters/${chapterId}/progress`);
+    return {
+      is_completed: progress.isCompleted
+    };
+  }
+
+  static async toggleChapterCompletion(chapterId: string, isCompleted: boolean): Promise<void> {
+    await apiCall(`/api/chapters/${chapterId}/progress`, {
+      method: 'POST',
+      body: JSON.stringify({ isCompleted })
+    });
   }
 }

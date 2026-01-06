@@ -11,11 +11,7 @@ createRoot(document.getElementById('root')!).render(
       domain={import.meta.env.VITE_KINDE_DOMAIN || ''}
       redirectUri={import.meta.env.VITE_KINDE_REDIRECT_URL || window.location.origin}
       logoutUri={import.meta.env.VITE_KINDE_LOGOUT_URL || window.location.origin}
-      onRedirectCallback={(user, appState) => {
-        console.log('Kinde redirect callback:', user, appState);
-        // Redirect to dashboard after successful auth
-        window.location.href = appState?.redirectTo || '/dashboard';
-      }}
+      audience={import.meta.env.VITE_API_URL || 'http://localhost:3001'}
     >
       <App />
     </KindeProvider>

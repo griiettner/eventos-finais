@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Play, CheckCircle2 } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import { AdminService } from '../services/admin-service';
+import { useAuth } from '../hooks/useAuth';
 
 interface ChapterRow {
   id: string;
@@ -16,9 +17,12 @@ const Dashboard: React.FC = () => {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
   const [completedLessons] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const { loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
+      if (authLoading) return;
+      
       try {
         // Load chapters from API
         const chaptersData = await AdminService.getAllChapters();
@@ -32,13 +36,17 @@ const Dashboard: React.FC = () => {
         // Progress tracking is handled per-chapter, not loaded here for now
         // TODO: Add batch progress loading if needed
       } catch (error) {
+        if (error instanceof Error && error.message === 'AUTH_INITIALIZING') {
+          // Erro esperado durante o carregamento inicial, não logar
+          return;
+        }
         console.error('Failed to load dashboard data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [authLoading]);
 
   const handleProfileUpdate = async () => {
     // Profile is managed by Kinde, no local update needed

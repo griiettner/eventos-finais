@@ -6,13 +6,15 @@ import { setAuthTokenGetter } from '../services/admin-service';
 import { setFirebaseAuthTokenGetter } from '../services/firebase-service';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user: kindeUser, isAuthenticated, isLoading, logout: kindeLogout, getClaim, getRoles, getToken } = useKindeAuth();
+  const { user: kindeUser, isAuthenticated, isLoading, logout: kindeLogout, getClaim, getToken } = useKindeAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Set up token getter for API calls
   useEffect(() => {
     const tokenGetter = async () => {
+      console.log('[AuthContext] getToken called');
       const token = await getToken();
+      console.log('[AuthContext] token received:', token ? 'YES' : 'EMPTY');
       return token || '';
     };
     setAuthTokenGetter(tokenGetter);

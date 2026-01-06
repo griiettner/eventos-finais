@@ -95,8 +95,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Kinde JWT verification (reads VITE_KINDE_DOMAIN from .env via dotenv)
+// Kinde JWT verification
 const kindeDomain = process.env.VITE_KINDE_DOMAIN;
+const kindeAudience = process.env.VITE_API_URL || 'http://localhost:3001';
 
 const client = jwksClient({
   jwksUri: `${kindeDomain}/.well-known/jwks.json`,
@@ -110,7 +111,7 @@ function getKey(header, callback) {
       callback(err);
       return;
     }
-    const signingKey = key.publicKey || key.rsaPublicKey;
+    const signingKey = key.getPublicKey();
     callback(null, signingKey);
   });
 }
@@ -125,18 +126,25 @@ const authMiddleware = (req, res, next) => {
   
   const token = authHeader.split(' ')[1];
   
-  jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err, decoded) => {
+  // Debug: Decode token without verification to see contents
+  const decoded = jwt.decode(token);
+  console.log('[Auth Debug] Raw Token Payload:', JSON.stringify(decoded, null, 2));
+
+  jwt.verify(token, getKey, { 
+    algorithms: ['RS256'],
+    // issuer: kindeDomain // Temporariamente removido para isolar o problema
+  }, (err, verifiedDecoded) => {
     if (err) {
       console.error('JWT verification failed:', err.message);
-      return res.status(401).json({ error: 'Invalid token' });
+      // Se falhar a verificação, ainda tentamos usar o decoded para ver o que tinha dentro
+      return res.status(401).json({ error: 'Invalid token', details: err.message });
     }
     
-    // Extract user info and roles from Kinde token
     req.user = {
-      id: decoded.sub,
-      email: decoded.email,
-      roles: decoded.roles || [],
-      isAdmin: (decoded.roles || []).some(role => 
+      id: verifiedDecoded.sub,
+      email: verifiedDecoded.email,
+      roles: verifiedDecoded.roles || [],
+      isAdmin: (verifiedDecoded.roles || []).some(role => 
         role === 'admin' || role.key === 'admin' || role.name === 'Admin'
       )
     };
@@ -437,7 +445,7 @@ app.post('/api/progress', authMiddleware, async (req, res) => {
       // Update existing
       const docRef = existingSnapshot.docs[0].ref;
       await docRef.update({
-        completed: completed || false,
+        completed: completed !== undefined ? completed : false,
         currentPage: currentPage || 0,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
@@ -448,7 +456,7 @@ app.post('/api/progress', authMiddleware, async (req, res) => {
       const docRef = await db.collection('userProgress').add({
         userId: req.user.id,
         chapterId,
-        completed: completed || false,
+        completed: completed !== undefined ? completed : false,
         currentPage: currentPage || 0,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -459,6 +467,110 @@ app.post('/api/progress', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error updating progress:', error);
     res.status(500).json({ error: 'Failed to update progress' });
+  }
+});
+
+// Get page read progress for a chapter
+app.get('/api/chapters/:chapterId/progress/pages', authMiddleware, async (req, res) => {
+  try {
+    const snapshot = await db.collection('pageProgress')
+      .where('userId', '==', req.user.id)
+      .where('chapterId', '==', req.params.chapterId)
+      .get();
+    
+    const progress = snapshot.docs.map(doc => ({
+      pageId: doc.data().pageId,
+      isRead: doc.data().isRead
+    }));
+    
+    res.json(progress);
+  } catch (error) {
+    console.error('Error fetching page progress:', error);
+    res.status(500).json({ error: 'Failed to fetch page progress' });
+  }
+});
+
+// Mark a page as read
+app.post('/api/progress/page', authMiddleware, async (req, res) => {
+  try {
+    const { chapterId, pageId, isRead } = req.body;
+    
+    const snapshot = await db.collection('pageProgress')
+      .where('userId', '==', req.user.id)
+      .where('pageId', '==', pageId)
+      .get();
+    
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({
+        isRead: isRead !== undefined ? isRead : true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await db.collection('pageProgress').add({
+        userId: req.user.id,
+        chapterId,
+        pageId,
+        isRead: isRead !== undefined ? isRead : true,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating page progress:', error);
+    res.status(500).json({ error: 'Failed to update page progress' });
+  }
+});
+
+// Get completion status for a chapter
+app.get('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) => {
+  try {
+    const snapshot = await db.collection('userProgress')
+      .where('userId', '==', req.user.id)
+      .where('chapterId', '==', req.params.chapterId)
+      .get();
+    
+    if (snapshot.empty) {
+      return res.json({ isCompleted: false });
+    }
+    
+    res.json({ isCompleted: snapshot.docs[0].data().completed || false });
+  } catch (error) {
+    console.error('Error fetching chapter progress:', error);
+    res.status(500).json({ error: 'Failed to fetch chapter progress' });
+  }
+});
+
+// Toggle chapter completion
+app.post('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) => {
+  try {
+    const { isCompleted } = req.body;
+    
+    const snapshot = await db.collection('userProgress')
+      .where('userId', '==', req.user.id)
+      .where('chapterId', '==', req.params.chapterId)
+      .get();
+    
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({
+        completed: isCompleted,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await db.collection('userProgress').add({
+        userId: req.user.id,
+        chapterId: req.params.chapterId,
+        completed: isCompleted,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error toggling chapter completion:', error);
+    res.status(500).json({ error: 'Failed to toggle chapter completion' });
   }
 });
 

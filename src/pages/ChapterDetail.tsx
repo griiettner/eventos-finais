@@ -4,11 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Type, Moon, Sun, Book, Save, CheckCircle2, X, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { AdminService, type ChapterPage, type Chapter } from '../services/admin-service';
 import ContentModal from '../components/ContentModal';
+import { useAuth } from '../hooks/useAuth';
 
 const ChapterDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { loading: authLoading } = useAuth();
   
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [pages, setPages] = useState<ChapterPage[]>([]);
@@ -51,8 +53,7 @@ const ChapterDetail: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!id) {
-        setIsLoading(false);
+      if (!id || authLoading) {
         return;
       }
       
@@ -75,16 +76,29 @@ const ChapterDetail: React.FC = () => {
         const questionsData = await AdminService.getChapterQuestions(id);
         setQuestions(questionsData.map(q => ({ id: q.id, text: q.text })));
 
+        // Load page read progress from API
+        const readProgress = await AdminService.getPageReadProgress(id);
+        const readPageIds = new Set(readProgress.filter(p => p.is_read).map(p => p.page_id));
+        setReadPages(readPageIds);
+
+        // Load completion status from API
+        const progress = await AdminService.getChapterProgress(id);
+        setIsCompleted(progress.is_completed);
+
         // Progress and answers are stored locally for now
-        // TODO: Implement progress API if needed
+        // TODO: Implement answers API endpoint
       } catch (error) {
+        if (error instanceof Error && error.message === 'AUTH_INITIALIZING') {
+          // Erro esperado durante o carregamento inicial, não logar
+          return;
+        }
         console.error('Failed to load chapter:', error);
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [id]);
+  }, [id, authLoading]);
 
 useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -102,11 +116,10 @@ useEffect(() => {
   const currentPage = sortedPages[currentPageIndex];
 
   const handleMarkPageAsRead = async () => {
-    if (!chapter || !currentPage) return;
+    if (!chapter || !currentPage || !id) return;
     
     try {
-      // TODO: Implement page read progress API
-      // For now, just update local state
+      await AdminService.markPageAsRead(id, currentPage.id);
       setReadPages(prev => new Set([...prev, currentPage.id]));
       
       // Se houver mais páginas não lidas, o índice 0 passará a ser a próxima não lida
@@ -232,10 +245,10 @@ useEffect(() => {
   }
 
   const handleToggleCompletion = async () => {
+    if (!id) return;
     try {
       const newState = !isCompleted;
-      // TODO: Implement progress API endpoint
-      // For now, just update local state
+      await AdminService.toggleChapterCompletion(id, newState);
       setIsCompleted(newState);
       console.log('Progress toggled:', newState);
     } catch (error) {
