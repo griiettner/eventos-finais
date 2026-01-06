@@ -43,6 +43,14 @@ try {
       
       console.log('[Firebase Init] Original key preview:', privateKey.substring(0, 50) + '...');
       
+      // Remove surrounding quotes if present
+      privateKey = privateKey.trim();
+      if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || 
+          (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+        privateKey = privateKey.slice(1, -1);
+        console.log('[Firebase Init] Removed surrounding quotes from key');
+      }
+      
       // If the key doesn't start with -----BEGIN, it might be base64 encoded
       if (!privateKey.includes('-----BEGIN')) {
         console.log('[Firebase Init] Key does not contain BEGIN marker, trying base64 decode...');
