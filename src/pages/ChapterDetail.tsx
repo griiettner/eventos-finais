@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Play, Pause, Type, Moon, Sun, Book, Save, Volume2, CheckCircle2, X, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Type, Moon, Sun, Book, Save, CheckCircle2, X, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { AdminService, type ChapterPage, type Chapter } from '../services/admin-service';
 import ContentModal from '../components/ContentModal';
 
@@ -19,13 +19,19 @@ const ChapterDetail: React.FC = () => {
 
   const [fontSize, setFontSize] = useState(18);
   const [theme, setTheme] = useState<'dark' | 'sepia' | 'light'>('dark');
-  const [isPlaying, setIsPlaying] = useState(searchParams.get('autoPlay') === 'true');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSaved, setIsSaved] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; content: string } | null>(null);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Audio player state
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.8);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
 
   // Build full URL for audio (path is stored relative in DB)
   const getAudioUrl = (path: string | undefined) => {
@@ -33,6 +39,14 @@ const ChapterDetail: React.FC = () => {
     if (path.startsWith('http')) return path;
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
     return `${apiUrl}${path}`;
+  };
+
+  // Format time in MM:SS
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -219,14 +233,6 @@ const ChapterDetail: React.FC = () => {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) audioRef.current.pause();
-      else audioRef.current.play();
-      setIsPlaying(!isPlaying);
-    }
-  };
-
   return (
     <div className={`chapter-detail-layout theme-${theme}`}>
       <header className='glass detail-header'>
@@ -325,22 +331,118 @@ const ChapterDetail: React.FC = () => {
 
         {chapter.audio_url && (
           <section className='audio-player-section card'>
-            <div className='player-info'>
-              <Volume2 size={24} color='var(--primary)' />
-              <div>
-                <h4>Audio Book</h4>
-                <p>{isPlaying ? 'Reproduzindo...' : 'Pausado'}</p>
+            <div className='custom-audio-player'>
+              <div className='player-controls'>
+                <button 
+                  onClick={() => {
+                    if (audioRef.current) {
+                      if (isPlaying) {
+                        audioRef.current.pause();
+                      } else {
+                        audioRef.current.play();
+                      }
+                      setIsPlaying(!isPlaying);
+                    }
+                  }} 
+                  className='play-btn'
+                >
+                  {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                </button>
+                
+                <div className='progress-container'>
+                  <span className='time-display'>
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                  <input
+                    type='range'
+                    min={0}
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={(e) => {
+                      const time = Number(e.target.value);
+                      if (audioRef.current) {
+                        audioRef.current.currentTime = time;
+                      }
+                      setCurrentTime(time);
+                    }}
+                    className='progress-slider'
+                  />
+                </div>
+
+                <div className='speed-controls'>
+                  <select
+                    value={playbackRate}
+                    onChange={(e) => {
+                      const rate = Number(e.target.value);
+                      if (audioRef.current) {
+                        audioRef.current.playbackRate = rate;
+                      }
+                      setPlaybackRate(rate);
+                    }}
+                    className='speed-select'
+                  >
+                    <option value={0.5}>0.5x</option>
+                    <option value={0.75}>0.75x</option>
+                    <option value={1}>1x</option>
+                    <option value={1.25}>1.25x</option>
+                    <option value={1.5}>1.5x</option>
+                    <option value={1.75}>1.75x</option>
+                    <option value={2}>2x</option>
+                  </select>
+                </div>
+
+                <div className='volume-controls'>
+                  <button 
+                    onClick={() => {
+                      if (audioRef.current) {
+                        audioRef.current.muted = !isMuted;
+                      }
+                      setIsMuted(!isMuted);
+                    }}
+                    className='volume-btn'
+                  >
+                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                  </button>
+                  <input
+                    type='range'
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    value={isMuted ? 0 : volume}
+                    onChange={(e) => {
+                      const vol = Number(e.target.value);
+                      if (audioRef.current) {
+                        audioRef.current.volume = vol;
+                      }
+                      setVolume(vol);
+                      setIsMuted(vol === 0);
+                    }}
+                    className='volume-slider'
+                  />
+                </div>
               </div>
+
+              <audio
+                ref={audioRef}
+                src={getAudioUrl(chapter.audio_url)}
+                onTimeUpdate={() => {
+                  if (audioRef.current) {
+                    setCurrentTime(audioRef.current.currentTime);
+                  }
+                }}
+                onLoadedMetadata={() => {
+                  if (audioRef.current) {
+                    setDuration(audioRef.current.duration);
+                    audioRef.current.volume = volume;
+                    if (searchParams.get('autoPlay') === 'true') {
+                      audioRef.current.play();
+                      setIsPlaying(true);
+                    }
+                  }
+                }}
+                onEnded={() => setIsPlaying(false)}
+              />
             </div>
-            <button onClick={togglePlay} className='play-btn'>
-              {isPlaying ? <Pause size={30} fill='currentColor' /> : <Play size={30} fill='currentColor' />}
-            </button>
-            <audio
-              ref={audioRef}
-              src={getAudioUrl(chapter.audio_url)}
-              onEnded={() => setIsPlaying(false)}
-              autoPlay={searchParams.get('autoPlay') === 'true'}
-            />
           </section>
         )}
 
