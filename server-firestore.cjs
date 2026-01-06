@@ -30,7 +30,6 @@ try {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
-    console.log('Firebase Admin SDK initialized with service account file');
   } catch (fileError) {
     // Fall back to environment variables
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
@@ -53,12 +52,7 @@ try {
       if (!privateKey.endsWith('\n')) {
         privateKey += '\n';
       }
-      
-      console.log('[Firebase Init] Private key format check:', {
-        startsWithBegin: privateKey.startsWith('-----BEGIN'),
-        endsWithEnd: privateKey.includes('-----END'),
-        length: privateKey.length
-      });
+    
       
       admin.initializeApp({
         credential: admin.credential.cert({
@@ -67,7 +61,6 @@ try {
           privateKey: privateKey
         })
       });
-      console.log('Firebase Admin SDK initialized with environment variables');
     } else {
       throw new Error('Neither service account file nor required environment variables found');
     }
@@ -117,7 +110,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request logging
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
@@ -154,7 +146,6 @@ const authMiddleware = (req, res, next) => {
   
   // Debug: Decode token without verification to see contents
   const decoded = jwt.decode(token);
-  console.log('[Auth Debug] Raw Token Payload:', JSON.stringify(decoded, null, 2));
 
   jwt.verify(token, getKey, { 
     algorithms: ['RS256'],
@@ -281,8 +272,6 @@ app.post('/api/chapters/:id/audio', authMiddleware, adminMiddleware, upload.sing
 
     // Build the URL to access the uploaded file
     const audioUrl = `/uploads/audio/${req.file.filename}`;
-
-    console.log(`Audio uploaded: ${req.file.filename} for chapter ${req.params.id}`);
 
     res.json({ audioUrl, filename: req.file.filename });
   } catch (error) {

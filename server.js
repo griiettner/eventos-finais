@@ -59,7 +59,6 @@ if (!fs.existsSync(DB_PATH)) {
   `);
   
   db.close();
-  console.log('Database initialized:', DB_PATH);
 }
 
 // Configure multer for file uploads
