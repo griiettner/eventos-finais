@@ -29,6 +29,10 @@ const Dashboard: React.FC = () => {
   const { loading: authLoading } = useAuth();
 
   useEffect(() => {
+    let retryTimeout: ReturnType<typeof setTimeout>;
+    let retryCount = 0;
+    const maxRetries = 5;
+    
     const fetchData = async () => {
       if (authLoading) return;
       
@@ -46,17 +50,28 @@ const Dashboard: React.FC = () => {
           order_index: c.order_index,
           progress: progressData[c.id]
         })));
+        setIsLoading(false);
       } catch (error) {
         if (error instanceof Error && error.message === 'AUTH_INITIALIZING') {
-          // Erro esperado durante o carregamento inicial, não logar
+          // Token getter not ready yet, retry after a short delay
+          if (retryCount < maxRetries) {
+            retryCount++;
+            retryTimeout = setTimeout(fetchData, 200);
+          } else {
+            console.error('Failed to load dashboard data: Auth token not available after retries');
+            setIsLoading(false);
+          }
           return;
         }
         console.error('Failed to load dashboard data:', error);
-      } finally {
         setIsLoading(false);
       }
     };
     fetchData();
+    
+    return () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, [authLoading]);
 
   const handleProfileUpdate = async () => {
