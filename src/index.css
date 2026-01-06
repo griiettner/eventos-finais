@@ -852,6 +852,23 @@ button {
   transform: translateY(-2px);
 }
 
+.btn-complete-lesson.disabled {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+  border-color: rgba(255, 255, 255, 0.1);
+  cursor: not-allowed;
+  transform: none !important;
+  opacity: 0.6;
+}
+
+.completion-requirement-hint {
+  font-size: 0.85rem;
+  color: #ffb74d;
+  margin-top: 1rem;
+  text-align: center;
+  line-height: 1.4;
+}
+
 .btn-complete-lesson.completed {
   background: rgba(255, 152, 0, 0.1);
   color: #ffb74d;

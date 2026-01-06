@@ -266,6 +266,25 @@ useEffect(() => {
   }, [answers, id]);
 
 
+  const totalPagesInChapter = useMemo(() => {
+    if (pages.length === 0) return 0;
+    return Math.max(...pages.map(p => p.page_number));
+  }, [pages]);
+
+  const allQuestionsAnswered = useMemo(() => {
+    if (questions.length === 0) return true;
+    return questions.every(q => answers[q.id]?.trim().length > 0);
+  }, [questions, answers]);
+
+  const allPagesRead = useMemo(() => {
+    if (pages.length === 0) return true;
+    return pages.every(p => readPages.has(p.id));
+  }, [pages, readPages]);
+
+  const canComplete = useMemo(() => {
+    return allQuestionsAnswered && (isAudioFinished || allPagesRead);
+  }, [allQuestionsAnswered, isAudioFinished, allPagesRead]);
+
   if (isLoading) {
     return (
       <div className="chapter-detail-layout">
@@ -380,7 +399,7 @@ useEffect(() => {
               )}
               
               <div className='page-number-indicator'>
-                Página {currentPage?.page_number || currentPageIndex + 1} de {pages.length}
+                Página {currentPage?.page_number || currentPageIndex + 1} de {totalPagesInChapter}
               </div>
 
               <div className='page-content'>
@@ -580,7 +599,9 @@ useEffect(() => {
           <div className='action-buttons'>
             <button
               onClick={handleToggleCompletion}
-              className={`btn-complete-lesson ${isCompleted ? 'completed' : ''}`}
+              className={`btn-complete-lesson ${isCompleted ? 'completed' : ''} ${!isCompleted && !canComplete ? 'disabled' : ''}`}
+              disabled={!isCompleted && !canComplete}
+              title={!canComplete ? 'Responda todas as perguntas e ouça o áudio ou leia todas as páginas para concluir' : ''}
             >
               {isCompleted ? (
                 <>
@@ -592,6 +613,12 @@ useEffect(() => {
                 </>
               )}
             </button>
+            {!isCompleted && !canComplete && (
+              <p className="completion-requirement-hint">
+                {!allQuestionsAnswered && "• Responda todas as perguntas "}
+                {!(isAudioFinished || allPagesRead) && "• Ouça o áudio completo ou leia todas as páginas"}
+              </p>
+            )}
           </div>
         </section>
 
