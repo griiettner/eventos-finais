@@ -1,88 +1,74 @@
 # Eventos Finais
 
-A React + TypeScript application for managing and studying biblical events with authentication and admin features.
+A web application for studying biblical end-times events with interactive chapters, audio content, and reflection questions.
 
-## Deployment
+## Features
 
-This application is deployed using Coolify with automatic deployments on git push.
+- 📖 **Chapter-based learning** - Structured content about biblical prophecy and end times
+- 🎵 **Audio narration** - Listen to chapters with high-quality audio
+- ❓ **Reflection questions** - Interactive study questions for each chapter
+- 👤 **User authentication** - Secure login with Kinde Auth
+- 📊 **Progress tracking** - Track your study progress across chapters
+- 👨‍💼 **Admin dashboard** - Manage chapters, content, and questions
 
-### Services
-- **Frontend**: Nginx serving built React app (port 8002)
-- **API**: Node.js/Express server with Firebase (port 3001)
+## Tech Stack
 
-### Stack
-- React 19 with TypeScript
-- Vite (Rolldown) for building
-- Firebase/Firestore for database
-- Kinde for authentication
-- Express.js API server
+### Frontend
+- **React 19** with TypeScript
+- **Vite** (Rolldown) for blazing fast builds
+- **Framer Motion** for smooth animations
+- **Kinde Auth** for authentication
+- **Firebase SDK** for client-side database access
 
-Currently, two official plugins are available:
+### Backend API
+- **Node.js** with Express.js
+- **Firebase Admin SDK** for server-side operations
+- **Firestore** for database
+- **JWT validation** with Kinde
+- **Multer** for audio file uploads
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Deployment
+- **Coolify** for containerized deployment
+- **Docker** multi-stage builds (separate frontend/API containers)
+- **Nginx** serving frontend on port 8002
+- **Express API** running on port 3001
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Run development server
+npm run dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Run API server
+npm run server:api:dev
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Run both frontend and API
+npm run dev:full
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Environment Variables
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Required environment variables:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+# Kinde Authentication
+VITE_KINDE_DOMAIN=your-domain.kinde.com
+VITE_KINDE_CLIENT_ID=your-client-id
+VITE_KINDE_REDIRECT_URL=http://localhost:5173/dashboard
+VITE_KINDE_LOGOUT_URL=http://localhost:5173/login
+
+# Firebase
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account@email.com
+FIREBASE_PRIVATE_KEY=your-private-key
+
+# API
+VITE_API_URL=http://localhost:3001
+PORT=3001
 ```
