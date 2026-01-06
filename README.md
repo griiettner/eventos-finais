@@ -1,6 +1,21 @@
-# React + TypeScript + Vite
+# Eventos Finais
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + TypeScript application for managing and studying biblical events with authentication and admin features.
+
+## Deployment
+
+This application is deployed using Coolify with automatic deployments on git push.
+
+### Services
+- **Frontend**: Nginx serving built React app (port 8002)
+- **API**: Node.js/Express server with Firebase (port 3001)
+
+### Stack
+- React 19 with TypeScript
+- Vite (Rolldown) for building
+- Firebase/Firestore for database
+- Kinde for authentication
+- Express.js API server
 
 Currently, two official plugins are available:
 
