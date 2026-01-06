@@ -34,11 +34,37 @@ try {
   } catch (fileError) {
     // Fall back to environment variables
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      // Handle multiple private key formats
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      
+      // If the key doesn't start with -----BEGIN, it might be base64 encoded
+      if (!privateKey.includes('-----BEGIN')) {
+        try {
+          privateKey = Buffer.from(privateKey, 'base64').toString('utf8');
+        } catch (e) {
+          console.error('Failed to decode base64 private key');
+        }
+      }
+      
+      // Replace escaped newlines with actual newlines
+      privateKey = privateKey.replace(/\\n/g, '\n');
+      
+      // Ensure proper PEM format
+      if (!privateKey.endsWith('\n')) {
+        privateKey += '\n';
+      }
+      
+      console.log('[Firebase Init] Private key format check:', {
+        startsWithBegin: privateKey.startsWith('-----BEGIN'),
+        endsWithEnd: privateKey.includes('-----END'),
+        length: privateKey.length
+      });
+      
       admin.initializeApp({
         credential: admin.credential.cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+          privateKey: privateKey
         })
       });
       console.log('Firebase Admin SDK initialized with environment variables');
