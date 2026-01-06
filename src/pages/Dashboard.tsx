@@ -3,16 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Play, CheckCircle2 } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
-
-interface ProgressRow {
-  chapter_id: number;
-  is_read: number;
-  is_completed: number;
-  completed_at?: string;
-}
+import { AdminService } from '../services/admin-service';
 
 interface ChapterRow {
-  id: number;
+  id: string;
   title: string;
   summary: string;
   order_index: number;
@@ -20,23 +14,23 @@ interface ChapterRow {
 
 const Dashboard: React.FC = () => {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
-  const [completedLessons, setCompletedLessons] = useState<Record<number, boolean>>({});
+  const [completedLessons] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Load chapters from database
-        const chaptersData = await DBService.getAll<ChapterRow>('SELECT id, title, summary, order_index FROM chapters ORDER BY order_index');
-        setChapters(chaptersData);
+        // Load chapters from API
+        const chaptersData = await AdminService.getAllChapters();
+        setChapters(chaptersData.map(c => ({
+          id: c.id,
+          title: c.title,
+          summary: c.summary || '',
+          order_index: c.order_index
+        })));
 
-        // Load progress
-        const rows = await DBService.getAll<ProgressRow>('SELECT chapter_id, is_completed FROM progress');
-        const completedMap = rows.reduce((acc: Record<number, boolean>, row: ProgressRow) => {
-          acc[row.chapter_id] = !!row.is_completed;
-          return acc;
-        }, {});
-        setCompletedLessons(completedMap);
+        // Progress tracking is handled per-chapter, not loaded here for now
+        // TODO: Add batch progress loading if needed
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
       } finally {
@@ -46,16 +40,9 @@ const Dashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleProfileUpdate = async (userData: { username: string; email: string }) => {
-    try {
-      await DBService.exec(
-        'UPDATE user_profile SET username = ?, email = ? WHERE id = 1',
-        [userData.username, userData.email]
-      );
-      console.log('Profile updated successfully');
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-    }
+  const handleProfileUpdate = async () => {
+    // Profile is managed by Kinde, no local update needed
+    console.log('Profile managed by Kinde');
   };
 
   if (isLoading) {
