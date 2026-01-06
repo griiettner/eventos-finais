@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { BookOpen, Plus, FileAudio, MessageSquare, Trash, Edit } from 'lucide-react';
+import { BookOpen, Plus, FileAudio, MessageSquare, Trash, Edit, ArrowLeft } from 'lucide-react';
 import { AdminService, type Chapter } from '../services/admin-service';
 import AudioUploadModal from '../components/AudioUploadModal';
 import QuestionsModal from '../components/QuestionsModal';
@@ -69,6 +69,9 @@ const AdminDashboard: React.FC = () => {
     <div className="admin-layout">
       <header className="glass admin-header">
         <div className="header-content">
+          <button onClick={() => navigate('/dashboard')} className="back-btn" title="Voltar ao Dashboard">
+            <ArrowLeft size={20} />
+          </button>
           <BookOpen size={28} className="icon-primary" />
           <h1>Admin Dashboard</h1>
         </div>

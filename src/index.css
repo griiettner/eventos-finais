@@ -105,6 +105,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .btn-primary:active {
@@ -990,6 +991,12 @@ button {
 }
 
 /* Admin Dashboard Styles */
+.admin-layout {
+  min-height: 100vh;
+  background: var(--bg-deep);
+  padding-top: 100px;
+}
+
 .admin-dashboard {
   min-height: 100vh;
   background: #000;
@@ -1003,19 +1010,36 @@ button {
 }
 
 .admin-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 3rem;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  align-items: center;
+  padding: 0 2rem;
+  z-index: 1000;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.admin-header .header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-direction: row;
 }
 
 .admin-header h1 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .admin-header p {
