@@ -271,7 +271,7 @@ useEffect(() => {
           <ChevronLeft size={24} />
         </button>
         <div className='header-title'>
-          <span>Capítulo {chapter.id}</span>
+          <span>Capítulo {chapter.order_index}</span>
           <h2>{chapter.title}</h2>
         </div>
         <div className='header-controls'>
