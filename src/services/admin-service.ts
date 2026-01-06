@@ -33,6 +33,17 @@ export interface ChapterPage {
   updated_at?: Timestamp;
 }
 
+interface ApiChapterPage {
+  id: string;
+  chapterId: string;
+  subtitle?: string;
+  pageNumber: number;
+  content: string;
+  orderIndex: number;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
 // Helper to get auth token
 let getAccessToken: (() => Promise<string>) | null = null;
 
@@ -62,14 +73,41 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
   return response.json();
 }
 
+// API returns camelCase, frontend uses snake_case
+interface ApiChapter {
+  id: string;
+  title: string;
+  summary?: string;
+  content?: string;
+  audioUrl?: string;
+  orderIndex: number;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+function mapChapter(c: ApiChapter): Chapter {
+  return {
+    id: c.id,
+    title: c.title,
+    summary: c.summary,
+    content: c.content,
+    audio_url: c.audioUrl,
+    order_index: c.orderIndex,
+    created_at: c.createdAt,
+    updated_at: c.updatedAt
+  };
+}
+
 export class AdminService {
   // Chapter Management
   static async getAllChapters(): Promise<Chapter[]> {
-    return apiCall<Chapter[]>('/api/chapters');
+    const chapters = await apiCall<ApiChapter[]>('/api/chapters');
+    return chapters.map(mapChapter);
   }
 
   static async getChapter(id: string): Promise<Chapter | null> {
-    return apiCall<Chapter>(`/api/chapters/${id}`);
+    const chapter = await apiCall<ApiChapter>(`/api/chapters/${id}`);
+    return chapter ? mapChapter(chapter) : null;
   }
 
   static async createChapter(chapter: Omit<Chapter, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
@@ -115,7 +153,7 @@ export class AdminService {
     return result.id;
   }
 
-  static async updateQuestion(id: string, question: Partial<Omit<Question, 'id' | 'created_at'>>): Promise<void> {
+  static async updateQuestion(): Promise<void> {
     // Note: API doesn't have update question endpoint yet, would need to add it
     throw new Error('Update question not implemented in API yet');
   }
@@ -124,24 +162,41 @@ export class AdminService {
     await apiCall(`/api/questions/${id}`, { method: 'DELETE' });
   }
 
-  static async reorderQuestions(chapterId: string, questionIds: string[]): Promise<void> {
+  static async reorderQuestions(): Promise<void> {
     // Note: API doesn't have reorder endpoint yet, would need to add it
     throw new Error('Reorder questions not implemented in API yet');
   }
 
-  // Audio file handling (store as base64 data URL)
-  static async uploadAudioFile(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  // Audio file handling (upload to backend -> Firebase Storage)
+  static async uploadAudioFile(chapterId: string, file: File): Promise<string> {
+    const token = getAccessToken ? await getAccessToken() : null;
+
+    const formData = new FormData();
+    formData.append('audio', file);
+
+    const response = await fetch(`${API_URL}/api/chapters/${chapterId}/audio`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: formData
     });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `API error: ${response.status}`);
+    }
+
+    const data = (await response.json()) as { audioUrl?: string };
+    if (!data?.audioUrl) {
+      throw new Error('No audioUrl returned from API');
+    }
+    return data.audioUrl;
   }
 
   // Chapter Pages Management
   static async getChapterPages(chapterId: string): Promise<ChapterPage[]> {
-    const pages = await apiCall<any[]>(`/api/chapters/${chapterId}/pages`);
+    const pages = await apiCall<ApiChapterPage[]>(`/api/chapters/${chapterId}/pages`);
     // Map camelCase from API to snake_case for frontend
     return pages.map(page => ({
       id: page.id,
@@ -155,7 +210,7 @@ export class AdminService {
     }));
   }
 
-  static async getChapterPage(pageId: string): Promise<ChapterPage | null> {
+  static async getChapterPage(): Promise<ChapterPage | null> {
     // Note: API doesn't have single page endpoint, would need to add it
     throw new Error('Get single page not implemented in API yet');
   }
@@ -168,7 +223,7 @@ export class AdminService {
     return result.id;
   }
 
-  static async updateChapterPage(pageId: string, page: Partial<Omit<ChapterPage, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+  static async updateChapterPage(): Promise<void> {
     // Note: API doesn't have update page endpoint yet, would need to add it
     throw new Error('Update page not implemented in API yet');
   }
@@ -178,12 +233,12 @@ export class AdminService {
   }
 
   // Note: Page read progress is now handled through /api/progress endpoint
-  static async markPageAsRead(chapterId: string, pageId: string, userId: string): Promise<void> {
+  static async markPageAsRead(): Promise<void> {
     // Would use /api/progress endpoint
     throw new Error('Mark page as read not implemented in API yet');
   }
 
-  static async getPageReadProgress(chapterId: string, userId: string): Promise<{ page_id: string; is_read: boolean }[]> {
+  static async getPageReadProgress(): Promise<{ page_id: string; is_read: boolean }[]> {
     // Would use /api/progress endpoint
     return [];
   }

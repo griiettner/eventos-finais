@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, FileAudio, Upload, Trash } from 'lucide-react';
+import { X, FileAudio, Upload, Trash, RefreshCw } from 'lucide-react';
 import { AdminService, type Chapter } from '../services/admin-service';
 
 interface AudioUploadModalProps {
@@ -12,13 +12,20 @@ interface AudioUploadModalProps {
 const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, onSuccess }) => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [showReplaceInput, setShowReplaceInput] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hasAudio = !!chapter.audio_url;
 
   const handleAudioUpload = async () => {
     if (!audioFile) return;
     
     setIsUploading(true);
     try {
-      const audioUrl = await AdminService.uploadAudioFile(audioFile);
+      const audioPath = await AdminService.uploadAudioFile(chapter.id, audioFile);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const audioUrl = `${apiUrl}${audioPath}`;
       await AdminService.updateChapter(chapter.id, { audio_url: audioUrl });
       onSuccess();
       onClose();
@@ -33,12 +40,37 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
   const handleRemoveAudio = async () => {
     if (!confirm('Remover áudio do capítulo?')) return;
     
+    setIsRemoving(true);
     try {
       await AdminService.updateChapter(chapter.id, { audio_url: '' });
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to remove audio:', error);
+      alert('Erro ao remover áudio.');
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
+  const handleReplaceClick = () => {
+    setShowReplaceInput(true);
+    setTimeout(() => fileInputRef.current?.click(), 100);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setAudioFile(file);
+    if (file) {
+      setShowReplaceInput(true);
+    }
+  };
+
+  const cancelReplace = () => {
+    setAudioFile(null);
+    setShowReplaceInput(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -61,7 +93,7 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
         <div className="modal-header">
           <div className="modal-title-group">
             <FileAudio className="text-purple" />
-            <h3>Gerenciar Áudio</h3>
+            <h3>{hasAudio ? 'Áudio do Capítulo' : 'Adicionar Áudio'}</h3>
           </div>
           <button onClick={onClose} className="close-modal-btn">
             <X size={20} />
@@ -70,48 +102,101 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
 
         <div className="modal-body">
           <div className="audio-manager">
-            {chapter.audio_url ? (
-              <div className="current-audio">
-                <label>Áudio Atual</label>
-                <audio src={chapter.audio_url} controls className="audio-player" />
-                <button onClick={handleRemoveAudio} className="btn-danger">
-                  <Trash size={16} /> Remover Áudio
-                </button>
-              </div>
-            ) : (
-              <p className="no-audio-message">Nenhum áudio carregado ainda.</p>
-            )}
-
-            <div className="upload-section">
-              <label>Upload Novo Áudio</label>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
-                className="file-input"
-              />
-              {audioFile && (
-                <div className="file-preview">
-                  <FileAudio size={20} />
-                  <span>{audioFile.name}</span>
+            {hasAudio ? (
+              <>
+                <div className="current-audio">
+                  <label>Áudio Atual</label>
+                  <audio src={chapter.audio_url} controls className="audio-player" />
                 </div>
-              )}
-            </div>
+
+                {!showReplaceInput ? (
+                  <div className="audio-actions">
+                    <button onClick={handleReplaceClick} className="btn-secondary">
+                      <RefreshCw size={16} /> Substituir Áudio
+                    </button>
+                    <button 
+                      onClick={handleRemoveAudio} 
+                      className="btn-danger"
+                      disabled={isRemoving}
+                    >
+                      <Trash size={16} /> {isRemoving ? 'Removendo...' : 'Remover'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="replace-section">
+                    <label>Novo Áudio</label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="audio/*"
+                      onChange={handleFileSelect}
+                      className="file-input"
+                    />
+                    {audioFile && (
+                      <div className="file-preview">
+                        <FileAudio size={20} />
+                        <span>{audioFile.name}</span>
+                      </div>
+                    )}
+                    <div className="replace-actions">
+                      <button onClick={cancelReplace} className="btn-secondary">
+                        Cancelar
+                      </button>
+                      <button 
+                        onClick={handleAudioUpload} 
+                        disabled={!audioFile || isUploading}
+                        className="btn-primary"
+                      >
+                        <Upload size={16} /> {isUploading ? 'Enviando...' : 'Substituir'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="upload-section">
+                <p className="no-audio-message">Nenhum áudio carregado ainda.</p>
+                <label>Selecione um arquivo de áudio</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleFileSelect}
+                  className="file-input"
+                />
+                {audioFile && (
+                  <div className="file-preview">
+                    <FileAudio size={20} />
+                    <span>{audioFile.name}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="modal-footer">
-          <button onClick={onClose} className="btn-secondary">
-            Cancelar
-          </button>
-          <button 
-            onClick={handleAudioUpload} 
-            disabled={!audioFile || isUploading}
-            className="btn-primary"
-          >
-            <Upload size={16} /> {isUploading ? 'Enviando...' : 'Upload'}
-          </button>
-        </div>
+        {!hasAudio && (
+          <div className="modal-footer">
+            <button onClick={onClose} className="btn-secondary">
+              Cancelar
+            </button>
+            <button 
+              onClick={handleAudioUpload} 
+              disabled={!audioFile || isUploading}
+              className="btn-primary"
+            >
+              <Upload size={16} /> {isUploading ? 'Enviando...' : 'Upload'}
+            </button>
+          </div>
+        )}
+
+        {hasAudio && !showReplaceInput && (
+          <div className="modal-footer">
+            <button onClick={onClose} className="btn-primary">
+              Fechar
+            </button>
+          </div>
+        )}
       </motion.div>
     </div>
   );

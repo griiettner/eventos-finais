@@ -5,9 +5,18 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 const admin = require('firebase-admin');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Local uploads directory
+const UPLOADS_DIR = path.join(__dirname, 'uploads', 'audio');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
 
 // Initialize Firebase Admin SDK
 // Option 1: Use service account JSON file (production)
@@ -47,9 +56,38 @@ try {
 
 const db = admin.firestore();
 
+// Configure multer for local file storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname) || '.mp3';
+    cb(null, `${req.params.id}-${uniqueSuffix}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('audio/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only audio files are allowed'), false);
+    }
+  }
+});
+
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request logging
 app.use((req, res, next) => {
@@ -197,6 +235,25 @@ app.put('/api/chapters/:id', authMiddleware, adminMiddleware, async (req, res) =
   } catch (error) {
     console.error('Error updating chapter:', error);
     res.status(500).json({ error: 'Failed to update chapter' });
+  }
+});
+
+// Upload chapter audio (admin only) - saves locally
+app.post('/api/chapters/:id/audio', authMiddleware, adminMiddleware, upload.single('audio'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No audio file provided' });
+    }
+
+    // Build the URL to access the uploaded file
+    const audioUrl = `/uploads/audio/${req.file.filename}`;
+
+    console.log(`Audio uploaded: ${req.file.filename} for chapter ${req.params.id}`);
+
+    res.json({ audioUrl, filename: req.file.filename });
+  } catch (error) {
+    console.error('Error uploading chapter audio:', error);
+    res.status(500).json({ error: 'Failed to upload audio' });
   }
 });
 

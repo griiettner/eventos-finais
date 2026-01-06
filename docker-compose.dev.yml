@@ -35,7 +35,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3001
-    command: node server-firestore.cjs
+    command: npm run server:api:dev
     stdin_open: true
     tty: true
     restart: unless-stopped

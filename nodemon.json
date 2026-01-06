@@ -1,0 +1,8 @@
+{
+  "watch": ["server-firestore.cjs", ".env"],
+  "ext": "cjs,js,json",
+  "ignore": ["node_modules", ".git", "src"],
+  "exec": "node server-firestore.cjs",
+  "delay": 300,
+  "legacyWatch": true
+}
