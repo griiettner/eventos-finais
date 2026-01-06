@@ -30,6 +30,105 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Handle safe areas for mobile devices */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Help Page Styles */
+.help-page-layout {
+  min-height: 100vh;
+  background-color: var(--bg-deep);
+  display: flex;
+  flex-direction: column;
+}
+
+.help-content-container {
+  flex: 1;
+  padding: 2rem 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.help-intro {
+  text-align: center;
+  padding: 3rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.help-icon-main {
+  color: var(--primary);
+  filter: drop-shadow(0 0 10px var(--primary-glow));
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.help-card {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: var(--transition);
+}
+
+.help-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary);
+}
+
+.help-card-icon {
+  margin-bottom: 0.5rem;
+}
+
+.help-card h4 {
+  color: var(--primary);
+  font-size: 1.2rem;
+}
+
+.help-footer {
+  text-align: center;
+  padding-bottom: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.author-disclaimer {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+@media (max-width: 600px) {
+  .help-intro {
+    padding: 2rem 1rem;
+  }
+  
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Dark mode for system UI elements */
+@media (prefers-color-scheme: dark) {
+  body {
+    color-scheme: dark;
+  }
 }
 
 #root {

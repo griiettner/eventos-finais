@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Shield, ChevronDown, Edit, UserIcon } from 'lucide-react';
+import { LogOut, Shield, ChevronDown, Edit, UserIcon, HelpCircle, Menu } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -42,11 +42,11 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
     <div className='relative'>
       <div className='user-info' onClick={() => setIsOpen(!isOpen)} role='button'>
         <div className='avatar'>
-          <UserIcon size={20} />
+          <Menu size={20} />
         </div>
         <div>
           <h3>Olá, {user?.username} {user.isAdmin ? '(Admin)' : ''}</h3>
-          <p>Continue seu estudo</p>
+          <p>Menu de usuário</p>
         </div>
         <ChevronDown size={14} className={`chevron ${isOpen ? 'open' : ''}`} />
       </div>
@@ -109,6 +109,18 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
 
             {/* Menu Items */}
             <div className='menu-items'>
+              {/* Help Link */}
+              <button
+                onClick={() => {
+                  navigate('/help');
+                  setIsOpen(false);
+                }}
+                className='menu-item'
+              >
+                <HelpCircle size={16} />
+                Como usar o App
+              </button>
+
               {/* Admin Link for admin users */}
               {user.isAdmin && (
                 <button

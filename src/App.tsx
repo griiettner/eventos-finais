@@ -8,6 +8,7 @@ import ChapterDetail from './pages/ChapterDetail';
 import UpdateBanner from './components/UpdateBanner';
 import InstallPrompt from './components/InstallPrompt';
 import LoginPage from './pages/LoginPage';
+import HelpPage from './pages/HelpPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AddEditChapter from './pages/AddEditChapter';
 import ChapterQuestions from './pages/ChapterQuestions';
@@ -61,6 +62,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <ChapterDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/help'
+            element={
+              <ProtectedRoute>
+                <HelpPage />
               </ProtectedRoute>
             }
           />
