@@ -1947,10 +1947,33 @@ button {
   justify-content: space-between;
   gap: 1rem;
   margin: 2rem 0;
-  padding: 1rem;
+  padding: 1.25rem;
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: 16px;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .page-navigation {
+    flex-wrap: wrap;
+    padding-top: 3.5rem; /* Espaço para as bolinhas no topo */
+  }
+
+  .page-dots {
+    position: absolute;
+    top: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: none;
+    order: -1;
+  }
+
+  .btn-nav {
+    flex: 1;
+    min-width: 0; /* Permite que os botões encolham em telas muito pequenas */
+  }
 }
 
 .btn-nav {

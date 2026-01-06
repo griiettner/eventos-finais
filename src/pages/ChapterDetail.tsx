@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Type, Moon, Sun, Book, Save, CheckCircle2, X, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
@@ -86,7 +86,20 @@ const ChapterDetail: React.FC = () => {
     loadData();
   }, [id]);
 
-  const currentPage = pages[currentPageIndex];
+useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPageIndex]);
+
+  const sortedPages = useMemo(() => {
+    return [...pages].sort((a, b) => {
+      const aRead = readPages.has(a.id);
+      const bRead = readPages.has(b.id);
+      if (aRead === bRead) return a.order_index - b.order_index;
+      return aRead ? 1 : -1;
+    });
+  }, [pages, readPages]);
+
+  const currentPage = sortedPages[currentPageIndex];
 
   const handleMarkPageAsRead = async () => {
     if (!chapter || !currentPage) return;
@@ -95,13 +108,18 @@ const ChapterDetail: React.FC = () => {
       // TODO: Implement page read progress API
       // For now, just update local state
       setReadPages(prev => new Set([...prev, currentPage.id]));
+      
+      // Se houver mais páginas não lidas, o índice 0 passará a ser a próxima não lida
+      // devido ao useMemo que reordena as páginas. Por isso, resetamos para 0
+      // se a página atual acabou de ser marcada como lida e movida para o fim.
+      setCurrentPageIndex(0);
     } catch (error) {
       console.error('Failed to mark page as read:', error);
     }
   };
 
   const goToNextPage = () => {
-    if (currentPageIndex < pages.length - 1) {
+    if (currentPageIndex < sortedPages.length - 1) {
       setCurrentPageIndex(currentPageIndex + 1);
     }
   };
@@ -308,12 +326,12 @@ const ChapterDetail: React.FC = () => {
               </button>
               
               <div className='page-dots'>
-                {pages.map((_, index) => (
+                {sortedPages.map((page, index) => (
                   <button
-                    key={index}
+                    key={page.id}
                     onClick={() => setCurrentPageIndex(index)}
-                    className={`page-dot ${index === currentPageIndex ? 'active' : ''} ${readPages.has(pages[index]?.id || '') ? 'read' : ''}`}
-                    title={`Página ${index + 1}`}
+                    className={`page-dot ${index === currentPageIndex ? 'active' : ''} ${readPages.has(page.id) ? 'read' : ''}`}
+                    title={`Página ${page.page_number || index + 1}`}
                   />
                 ))}
               </div>
