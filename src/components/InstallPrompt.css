@@ -1,0 +1,173 @@
+.install-prompt-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fade-in 0.3s ease-out;
+}
+
+.install-prompt-card {
+  width: 100%;
+  max-width: 450px;
+  padding: 2rem;
+  position: relative;
+  border-radius: 24px 24px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+  animation: slide-up-install 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 640px) {
+  .install-prompt-overlay {
+    align-items: center;
+  }
+  .install-prompt-card {
+    border-radius: 24px;
+  }
+}
+
+.btn-close-prompt {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+.btn-close-prompt:hover {
+  color: white;
+}
+
+.install-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.app-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.app-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.app-info h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+.app-info p {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+}
+
+.install-instructions p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  margin: 0.75rem 0;
+  line-height: 1.6;
+}
+
+.inline-icon {
+  vertical-align: middle;
+  margin: 0 4px;
+  color: var(--primary);
+}
+
+.btn-install-now {
+  width: 100%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 1rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1rem;
+}
+
+.btn-install-now:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up-install {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.manual-instructions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.instructions-title {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+.instruction-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.step-icon {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.75rem;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.step-text {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding-top: 0.5rem;
+}
+
+.step-number {
+  font-weight: 700;
+  color: var(--primary);
+  margin-right: 0.25rem;
+}

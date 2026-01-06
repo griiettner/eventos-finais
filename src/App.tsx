@@ -6,6 +6,7 @@ import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import ChapterDetail from './pages/ChapterDetail';
 import UpdateBanner from './components/UpdateBanner';
+import InstallPrompt from './components/InstallPrompt';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AddEditChapter from './pages/AddEditChapter';
@@ -106,6 +107,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <Router>
         <UpdateBanner />
+        <InstallPrompt />
         <AppContent />
       </Router>
     </AuthProvider>
