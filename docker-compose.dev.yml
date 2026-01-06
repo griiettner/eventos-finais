@@ -1,0 +1,41 @@
+services:
+  # Frontend (Vite dev server)
+  frontend:
+    build:
+      context: .
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3001
+    command: npm run dev -- --host 0.0.0.0
+    stdin_open: true
+    tty: true
+    depends_on:
+      - api
+
+  # Backend API (Firestore + Kinde JWT validation)
+  api:
+    build:
+      context: .
+      target: development
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+    command: node server-firestore.cjs
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
