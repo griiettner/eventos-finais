@@ -72,3 +72,5 @@ FIREBASE_PRIVATE_KEY=your-private-key
 VITE_API_URL=http://localhost:3001
 PORT=3001
 ```
+
+Author @griiettner
