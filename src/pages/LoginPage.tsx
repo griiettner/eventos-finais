@@ -56,13 +56,11 @@ const LoginPage: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('User already authenticated, redirecting to dashboard');
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
   const signInWith = async (provider: 'google' | 'facebook' | 'apple') => {
-    console.log('Starting OAuth with provider:', provider);
     
     // Get the actual Connection ID from environment
     const connectionIds: Record<string, string> = {
@@ -72,7 +70,6 @@ const LoginPage: React.FC = () => {
     };
     
     const connectionId = connectionIds[provider];
-    console.log('Using connectionId:', connectionId);
     
     // Use register instead of login - this will:
     // 1. Create the account if it doesn't exist (first-time users)
@@ -84,7 +81,6 @@ const LoginPage: React.FC = () => {
   };
 
   const handleEmailSignIn = async () => {
-    console.log('Starting email sign-in');
     await login();
   };
 

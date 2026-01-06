@@ -28,16 +28,13 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    console.log('[AdminRoute] No user, redirecting to login');
     return <Navigate to='/login' />;
   }
 
   if (!user.isAdmin) {
-    console.log('[AdminRoute] User is not admin, redirecting to dashboard');
     return <Navigate to='/dashboard' />;
   }
 
-  console.log('[AdminRoute] User is admin, rendering admin content');
   return <>{children}</>;
 };
 

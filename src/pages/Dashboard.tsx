@@ -60,8 +60,7 @@ const Dashboard: React.FC = () => {
   }, [authLoading]);
 
   const handleProfileUpdate = async () => {
-    // Profile is managed by Kinde, no local update needed
-    console.log('Profile managed by Kinde');
+    return;
   };
 
   if (isLoading) {

@@ -12,9 +12,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Set up token getter for API calls
   useEffect(() => {
     const tokenGetter = async () => {
-      console.log('[AuthContext] getToken called');
       const token = await getToken();
-      console.log('[AuthContext] token received:', token ? 'YES' : 'EMPTY');
       return token || '';
     };
     setAuthTokenGetter(tokenGetter);
@@ -24,7 +22,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const init = async () => {
       try {
-        console.log('[AuthContext] Init - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
         if (isAuthenticated && kindeUser) {
           // Check if user has admin role from Kinde token claims
           // Requires "Roles (array)" to be enabled in Kinde > Settings > Applications > [App] > Tokens > Token Customization
@@ -58,7 +55,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isLoading, isAuthenticated, kindeUser, getClaim]);
 
   const logout = async () => {
-    console.log('Iniciando processo de logout...');
     await kindeLogout();
   };
 

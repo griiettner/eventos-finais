@@ -326,7 +326,6 @@ useEffect(() => {
       const newState = !isCompleted;
       await AdminService.toggleChapterCompletion(id, newState);
       setIsCompleted(newState);
-      console.log('Progress toggled:', newState);
     } catch (error) {
       console.error('Failed to toggle completion:', error);
     }

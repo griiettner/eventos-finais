@@ -124,13 +124,11 @@ export class AdminService {
   }
 
   static async createChapter(chapter: Omit<Chapter, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
-    console.log('[AdminService] Creating chapter:', chapter);
     try {
       const result = await apiCall<Chapter>('/api/chapters', {
         method: 'POST',
         body: JSON.stringify(chapter)
       });
-      console.log('[AdminService] Chapter created:', result);
       if (!result || !result.id) {
         console.error('[AdminService] Invalid response - no ID:', result);
         throw new Error('No chapter ID returned from API');

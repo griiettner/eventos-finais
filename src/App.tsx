@@ -15,8 +15,6 @@ import { AnimatePresence } from 'framer-motion';
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
 
-  console.log('[ProtectedRoute] loading:', loading, 'user:', user);
-
   if (loading)
     return (
       <div
@@ -35,11 +33,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     );
 
   if (!user) {
-    console.log('[ProtectedRoute] No user, redirecting to login');
     return <Navigate to='/login' />;
   }
 
-  console.log('[ProtectedRoute] User authenticated, rendering protected content');
   return <>{children}</>;
 };
 
