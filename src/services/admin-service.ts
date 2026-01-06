@@ -261,6 +261,28 @@ export class AdminService {
     }));
   }
 
+  static async getChapterDetailedProgress(chapterId: string): Promise<{
+    isCompleted: boolean;
+    isAudioFinished: boolean;
+    readPagesCount: number;
+    totalPagesCount: number;
+    answeredQuestionsCount: number;
+    totalQuestionsCount: number;
+  }> {
+    return apiCall(`/api/chapters/${chapterId}/progress/detailed`);
+  }
+
+  static async getAllChaptersProgress(): Promise<Record<string, {
+    isCompleted: boolean;
+    isAudioFinished: boolean;
+    readPagesCount: number;
+    totalPagesCount: number;
+    answeredQuestionsCount: number;
+    totalQuestionsCount: number;
+  }>> {
+    return apiCall('/api/progress/all');
+  }
+
   static async getChapterProgress(chapterId: string): Promise<{ is_completed: boolean; is_audio_finished: boolean }> {
     const progress = await apiCall<{ isCompleted: boolean; isAudioFinished: boolean }>(`/api/chapters/${chapterId}/progress`);
     return {

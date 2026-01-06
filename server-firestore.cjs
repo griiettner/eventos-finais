@@ -662,6 +662,82 @@ app.post('/api/chapters/:chapterId/progress/audio', authMiddleware, async (req, 
   }
 });
 
+// Get detailed progress for all chapters
+app.get('/api/progress/all', authMiddleware, async (req, res) => {
+  try {
+    const chaptersSnapshot = await db.collection('chapters').get();
+    const chapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const progressSnapshot = await db.collection('userProgress')
+      .where('userId', '==', req.user.id)
+      .get();
+    const progressMap = new Map(progressSnapshot.docs.map(doc => [doc.data().chapterId, doc.data()]));
+
+    const pagesSnapshot = await db.collection('chapterPages').get();
+    const pagesByChapter = new Map();
+    pagesSnapshot.docs.forEach(doc => {
+      const chapterId = doc.data().chapterId;
+      if (!pagesByChapter.has(chapterId)) pagesByChapter.set(chapterId, []);
+      pagesByChapter.get(chapterId).push(doc.id);
+    });
+
+    const readPagesSnapshot = await db.collection('pageProgress')
+      .where('userId', '==', req.user.id)
+      .get();
+    const readPagesByChapter = new Map();
+    readPagesSnapshot.docs.forEach(doc => {
+      const chapterId = doc.data().chapterId;
+      if (doc.data().isRead) {
+        if (!readPagesByChapter.has(chapterId)) readPagesByChapter.set(chapterId, new Set());
+        readPagesByChapter.get(chapterId).add(doc.data().pageId);
+      }
+    });
+
+    const questionsSnapshot = await db.collection('questions').get();
+    const questionsByChapter = new Map();
+    questionsSnapshot.docs.forEach(doc => {
+      const chapterId = doc.data().chapterId;
+      if (!questionsByChapter.has(chapterId)) questionsByChapter.set(chapterId, []);
+      questionsByChapter.get(chapterId).push(doc.id);
+    });
+
+    const answersSnapshot = await db.collection('userAnswers')
+      .where('userId', '==', req.user.id)
+      .get();
+    const answersByChapter = new Map();
+    answersSnapshot.docs.forEach(doc => {
+      const chapterId = doc.data().chapterId;
+      if (doc.data().answer && doc.data().answer.trim()) {
+        if (!answersByChapter.has(chapterId)) answersByChapter.set(chapterId, new Set());
+        answersByChapter.get(chapterId).add(doc.data().questionId);
+      }
+    });
+
+    const result = {};
+    chapters.forEach(chapter => {
+      const prog = progressMap.get(chapter.id) || {};
+      const chPages = pagesByChapter.get(chapter.id) || [];
+      const chReadPages = readPagesByChapter.get(chapter.id) || new Set();
+      const chQuestions = questionsByChapter.get(chapter.id) || [];
+      const chAnswers = answersByChapter.get(chapter.id) || new Set();
+
+      result[chapter.id] = {
+        isCompleted: prog.completed || false,
+        isAudioFinished: prog.isAudioFinished || false,
+        readPagesCount: chReadPages.size,
+        totalPagesCount: chPages.length,
+        answeredQuestionsCount: chAnswers.size,
+        totalQuestionsCount: chQuestions.length
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching detailed all progress:', error);
+    res.status(500).json({ error: 'Failed to fetch detailed all progress' });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 

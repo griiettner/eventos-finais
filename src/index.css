@@ -880,7 +880,86 @@ button {
   border-color: rgba(255, 152, 0, 0.5);
 }
 
-/* Dashboard Component Styles */
+.chapter-card.locked {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+  pointer-events: none;
+}
+
+.chapter-card.locked .chapter-number {
+  opacity: 0.3;
+}
+
+.btn-locked {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-dim) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  cursor: not-allowed;
+}
+
+.chapter-card.in-progress {
+  border-left: 4px solid var(--accent);
+}
+
+.chapter-progress-details {
+  margin: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.progress-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 80px;
+}
+
+.progress-bar-container {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar.finished {
+  background: #4ade80;
+}
+
+.progress-text {
+  min-width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-start {
+  background: var(--accent) !important;
+  color: white !important;
+}
+
+.btn-continue {
+  background: var(--accent) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Existing dashboard styles */
 .dashboard-layout {
   min-height: 100vh;
   padding-top: 140px;

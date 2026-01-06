@@ -6,16 +6,25 @@ import UserMenu from '../components/UserMenu';
 import { AdminService } from '../services/admin-service';
 import { useAuth } from '../hooks/useAuth';
 
+interface ChapterProgress {
+  isCompleted: boolean;
+  isAudioFinished: boolean;
+  readPagesCount: number;
+  totalPagesCount: number;
+  answeredQuestionsCount: number;
+  totalQuestionsCount: number;
+}
+
 interface ChapterRow {
   id: string;
   title: string;
   summary: string;
   order_index: number;
+  progress?: ChapterProgress;
 }
 
 const Dashboard: React.FC = () => {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
-  const [completedLessons] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const { loading: authLoading } = useAuth();
 
@@ -24,17 +33,19 @@ const Dashboard: React.FC = () => {
       if (authLoading) return;
       
       try {
-        // Load chapters from API
-        const chaptersData = await AdminService.getAllChapters();
+        // Load chapters and their progress in parallel
+        const [chaptersData, progressData] = await Promise.all([
+          AdminService.getAllChapters(),
+          AdminService.getAllChaptersProgress()
+        ]);
+
         setChapters(chaptersData.map(c => ({
           id: c.id,
           title: c.title,
           summary: c.summary || '',
-          order_index: c.order_index
+          order_index: c.order_index,
+          progress: progressData[c.id]
         })));
-
-        // Progress tracking is handled per-chapter, not loaded here for now
-        // TODO: Add batch progress loading if needed
       } catch (error) {
         if (error instanceof Error && error.message === 'AUTH_INITIALIZING') {
           // Erro esperado durante o carregamento inicial, não logar
@@ -96,43 +107,106 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <div className='chapters-grid'>
-            {chapters
-            .sort((a, b) => {
-              // Sort by completion status: incomplete first, then completed
-              const aCompleted = completedLessons[a.id] || false;
-              const bCompleted = completedLessons[b.id] || false;
-              if (aCompleted === bCompleted) return a.order_index - b.order_index; // Sort by chapter number
-              return aCompleted ? 1 : -1; // Incomplete first
-            })
-            .map((chapter, index) => (
-              <motion.div
-                key={chapter.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`card chapter-card ${completedLessons[chapter.id] ? 'completed' : ''}`}
-              >
-                <div className='chapter-number'>{chapter.order_index}</div>
-                <div className='chapter-content'>
-                  <h3>{chapter.title}</h3>
-                  <p>{chapter.summary}</p>
+            {(() => {
+              const sortedChapters = [...chapters].sort((a, b) => {
+                const aCompleted = a.progress?.isCompleted || false;
+                const bCompleted = b.progress?.isCompleted || false;
+                if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+                return a.order_index - b.order_index;
+              });
 
-                  <div className='chapter-actions'>
-                    <Link to={`/chapter/${chapter.id}`} className='btn-read'>
-                      <BookOpen size={18} /> Ler Capítulo
-                    </Link>
-                    <Link to={`/chapter/${chapter.id}?autoPlay=true`} className='btn-audio'>
-                      <Play size={18} /> Áudio
-                    </Link>
-                  </div>
-                </div>
-                {completedLessons[chapter.id] && (
-                  <div className='completed-badge'>
-                    <CheckCircle2 size={16} /> Concluído
-                  </div>
-                )}
-              </motion.div>
-            ))}
+              // Find the first chapter that is not completed
+              const firstIncompleteIndex = sortedChapters.findIndex(c => !c.progress?.isCompleted);
+
+              return sortedChapters.map((chapter, index) => {
+                const prog = chapter.progress;
+                const hasStarted = prog && (prog.readPagesCount > 0 || prog.isAudioFinished || prog.answeredQuestionsCount > 0);
+                const isCompleted = prog?.isCompleted;
+                
+                // A chapter is enabled if it's already completed OR it's the first incomplete one
+                const isEnabled = isCompleted || index === firstIncompleteIndex;
+
+                return (
+                  <motion.div
+                    key={chapter.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`card chapter-card ${isCompleted ? 'completed' : ''} ${hasStarted && !isCompleted ? 'in-progress' : ''} ${!isEnabled ? 'locked' : ''}`}
+                  >
+                    <div className='chapter-number'>{chapter.order_index}</div>
+                    <div className='chapter-content'>
+                      <h3>{chapter.title}</h3>
+                      <p>{chapter.summary}</p>
+
+                      {isEnabled && hasStarted && !isCompleted && prog && (
+                        <div className='chapter-progress-details'>
+                          <div className='progress-item'>
+                            <div className='progress-label'>
+                              <BookOpen size={14} /> Leitura
+                            </div>
+                            <div className='progress-bar-container'>
+                              <div 
+                                className='progress-bar' 
+                                style={{ width: `${(prog.readPagesCount / (prog.totalPagesCount || 1)) * 100}%` }}
+                              />
+                            </div>
+                            <span className='progress-text'>{prog.readPagesCount}/{prog.totalPagesCount}</span>
+                          </div>
+                          
+                          <div className='progress-item'>
+                            <div className='progress-label'>
+                              <Play size={14} /> Áudio
+                            </div>
+                            <div className='progress-bar-container'>
+                              <div 
+                                className={`progress-bar ${prog.isAudioFinished ? 'finished' : ''}`} 
+                                style={{ width: prog.isAudioFinished ? '100%' : '0%' }}
+                              />
+                            </div>
+                            <span className='progress-text'>{prog.isAudioFinished ? '100%' : '0%'}</span>
+                          </div>
+
+                          <div className='progress-item'>
+                            <div className='progress-label'>
+                              <CheckCircle2 size={14} /> Respostas
+                            </div>
+                            <div className='progress-bar-container'>
+                              <div 
+                                className='progress-bar' 
+                                style={{ width: `${(prog.answeredQuestionsCount / (prog.totalQuestionsCount || 1)) * 100}%` }}
+                              />
+                            </div>
+                            <span className='progress-text'>{prog.answeredQuestionsCount}/{prog.totalQuestionsCount}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className='chapter-actions'>
+                        {!isEnabled ? (
+                          <button className='btn-read btn-locked' disabled>
+                             Aguardando...
+                          </button>
+                        ) : !hasStarted ? (
+                          <Link to={`/chapter/${chapter.id}`} className='btn-read btn-start'>
+                            <Play size={18} /> Iniciar Estudo
+                          </Link>
+                        ) : (
+                          <Link to={`/chapter/${chapter.id}`} className='btn-read btn-continue'>
+                            <BookOpen size={18} /> {isCompleted ? 'Revisar Estudo' : 'Continuar Estudo'}
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                    {isCompleted && (
+                      <div className='completed-badge'>
+                        <CheckCircle2 size={16} /> Concluído
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              });
+            })()}
           </div>
         )}
       </main>
