@@ -542,6 +542,57 @@ app.get('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) =>
   }
 });
 
+// Save user answer for a question
+// Uses deterministic doc ID to avoid composite index requirement
+app.post('/api/answers', authMiddleware, async (req, res) => {
+  try {
+    const { chapterId, questionId, answer } = req.body;
+    
+    if (!chapterId || !questionId) {
+      return res.status(400).json({ error: 'chapterId and questionId are required' });
+    }
+    
+    // Use deterministic document ID: {userId}_{chapterId}_{questionId}
+    const docId = `${req.user.id}_${chapterId}_${questionId}`;
+    const docRef = db.collection('userAnswers').doc(docId);
+    
+    await docRef.set({
+      userId: req.user.id,
+      chapterId,
+      questionId,
+      answer: answer || '',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error saving user answer:', error);
+    res.status(500).json({ error: 'Failed to save answer' });
+  }
+});
+
+// Get user answers for a chapter
+app.get('/api/chapters/:chapterId/answers', authMiddleware, async (req, res) => {
+  try {
+    // Query by prefix pattern - all docs starting with {userId}_{chapterId}_
+    const prefix = `${req.user.id}_${req.params.chapterId}_`;
+    const snapshot = await db.collection('userAnswers')
+      .where(admin.firestore.FieldPath.documentId(), '>=', prefix)
+      .where(admin.firestore.FieldPath.documentId(), '<', prefix + '\uf8ff')
+      .get();
+    
+    const answers = snapshot.docs.map(doc => ({
+      questionId: doc.data().questionId,
+      answer: doc.data().answer
+    }));
+    
+    res.json(answers);
+  } catch (error) {
+    console.error('Error fetching user answers:', error);
+    res.status(500).json({ error: 'Failed to fetch answers' });
+  }
+});
+
 // Toggle chapter completion
 app.post('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) => {
   try {

@@ -274,4 +274,20 @@ export class AdminService {
       body: JSON.stringify({ isCompleted })
     });
   }
+
+  // User Answers handling
+  static async saveUserAnswer(chapterId: string, questionId: string, answer: string): Promise<void> {
+    await apiCall('/api/answers', {
+      method: 'POST',
+      body: JSON.stringify({ chapterId, questionId, answer })
+    });
+  }
+
+  static async getChapterAnswers(chapterId: string): Promise<{ question_id: string; answer: string }[]> {
+    const answers = await apiCall<{ questionId: string; answer: string }[]>(`/api/chapters/${chapterId}/answers`);
+    return answers.map(a => ({
+      question_id: a.questionId,
+      answer: a.answer
+    }));
+  }
 }

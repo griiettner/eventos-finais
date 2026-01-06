@@ -22,9 +22,13 @@ const ChapterDetail: React.FC = () => {
   const [fontSize, setFontSize] = useState(18);
   const [theme, setTheme] = useState<'dark' | 'sepia' | 'light'>('dark');
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; content: string } | null>(null);
+
+  // Ref to store current answers for saving (avoids dependency cycle)
+  const answersRef = useRef<Record<string, string>>({});
 
   // Audio player state
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -85,8 +89,15 @@ const ChapterDetail: React.FC = () => {
         const progress = await AdminService.getChapterProgress(id);
         setIsCompleted(progress.is_completed);
 
-        // Progress and answers are stored locally for now
-        // TODO: Implement answers API endpoint
+        // Load saved answers from API
+        const savedAnswers = await AdminService.getChapterAnswers(id);
+        const answersMap: Record<string, string> = {};
+        savedAnswers.forEach(a => {
+          answersMap[a.question_id] = a.answer;
+        });
+        setAnswers(answersMap);
+        // Keep ref in sync but don't trigger autosave
+        answersRef.current = answersMap;
       } catch (error) {
         if (error instanceof Error && error.message === 'AUTH_INITIALIZING') {
           // Erro esperado durante o carregamento inicial, não logar
@@ -221,6 +232,38 @@ useEffect(() => {
     return parts.length > 0 ? parts : content;
   };
 
+  // Track if user has made changes (not just loaded from API)
+  const hasUserChangesRef = useRef(false);
+
+  // Autosave debounce - 5 seconds after last user change
+  useEffect(() => {
+    if (!hasUserChangesRef.current) return;
+    
+    const timer = setTimeout(async () => {
+      if (!id) return;
+      
+      setIsSaving(true);
+      setIsSaved(false);
+      
+      try {
+        for (const [qId, text] of Object.entries(answersRef.current)) {
+          await AdminService.saveUserAnswer(id, qId, text);
+        }
+        
+        setIsSaved(true);
+        hasUserChangesRef.current = false;
+        setTimeout(() => setIsSaved(false), 3000);
+      } catch (error) {
+        console.error('Failed to autosave answers:', error);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [answers, id]);
+
+
   if (isLoading) {
     return (
       <div className="chapter-detail-layout">
@@ -256,20 +299,34 @@ useEffect(() => {
     }
   };
 
-  const handleSaveAnswers = async () => {
-    // TODO: Implement answers API endpoint
-    // For now, just show saved state
-    console.log('Answers to save:', answers);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
-  };
-
   return (
     <div className={`chapter-detail-layout theme-${theme}`}>
       <header className='glass detail-header'>
-        <button onClick={() => navigate('/dashboard')} className='back-btn'>
-          <ChevronLeft size={24} />
-        </button>
+        <div className="back-and-status">
+          <button onClick={() => navigate('/dashboard')} className='back-btn'>
+            <ChevronLeft size={24} />
+          </button>
+          <AnimatePresence>
+            {(isSaving || isSaved) && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="autosave-hint"
+              >
+                {isSaving ? (
+                  <span className="saving">
+                    <Save size={14} className="spin" /> Salvando...
+                  </span>
+                ) : (
+                  <span className="saved">
+                    <CheckCircle2 size={14} /> Salvo
+                  </span>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         <div className='header-title'>
           <span>Capítulo {chapter.order_index}</span>
           <h2>{chapter.title}</h2>
@@ -489,7 +546,12 @@ useEffect(() => {
                 <label>{q.text}</label>
                 <textarea
                   value={answers[q.id] || ''}
-                  onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+                  onChange={(e) => {
+                    const newAnswers = { ...answers, [q.id]: e.target.value };
+                    setAnswers(newAnswers);
+                    answersRef.current = newAnswers;
+                    hasUserChangesRef.current = true;
+                  }}
                   placeholder='Escreva sua resposta aqui...'
                 />
               </div>
@@ -497,18 +559,6 @@ useEffect(() => {
           </div>
 
           <div className='action-buttons'>
-            <button onClick={handleSaveAnswers} className='btn-primary save-btn'>
-              {isSaved ? (
-                <>
-                  <CheckCircle2 size={20} /> Salvo
-                </>
-              ) : (
-                <>
-                  <Save size={20} /> Salvar Respostas
-                </>
-              )}
-            </button>
-
             <button
               onClick={handleToggleCompletion}
               className={`btn-complete-lesson ${isCompleted ? 'completed' : ''}`}
