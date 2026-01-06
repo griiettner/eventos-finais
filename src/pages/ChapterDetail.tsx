@@ -25,6 +25,7 @@ const ChapterDetail: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isAudioFinished, setIsAudioFinished] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; content: string } | null>(null);
 
   // Ref to store current answers for saving (avoids dependency cycle)
@@ -88,6 +89,7 @@ const ChapterDetail: React.FC = () => {
         // Load completion status from API
         const progress = await AdminService.getChapterProgress(id);
         setIsCompleted(progress.is_completed);
+        setIsAudioFinished(progress.is_audio_finished || false);
 
         // Load saved answers from API
         const savedAnswers = await AdminService.getChapterAnswers(id);
@@ -286,6 +288,18 @@ useEffect(() => {
       </div>
     );
   }
+
+  const handleAudioEnded = async () => {
+    setIsPlaying(false);
+    if (!id || isAudioFinished) return;
+
+    try {
+      await AdminService.updateAudioProgress(id, true);
+      setIsAudioFinished(true);
+    } catch (error) {
+      console.error('Failed to mark audio as finished:', error);
+    }
+  };
 
   const handleToggleCompletion = async () => {
     if (!id) return;
@@ -528,8 +542,13 @@ useEffect(() => {
                     }
                   }
                 }}
-                onEnded={() => setIsPlaying(false)}
+                onEnded={handleAudioEnded}
               />
+              {isAudioFinished && (
+                <div className="audio-finished-badge">
+                  <CheckCircle2 size={16} /> Áudio concluído
+                </div>
+              )}
             </div>
           </section>
         )}

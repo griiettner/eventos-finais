@@ -532,10 +532,14 @@ app.get('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) =>
       .get();
     
     if (snapshot.empty) {
-      return res.json({ isCompleted: false });
+      return res.json({ isCompleted: false, isAudioFinished: false });
     }
     
-    res.json({ isCompleted: snapshot.docs[0].data().completed || false });
+    const data = snapshot.docs[0].data();
+    res.json({ 
+      isCompleted: data.completed || false,
+      isAudioFinished: data.isAudioFinished || false
+    });
   } catch (error) {
     console.error('Error fetching chapter progress:', error);
     res.status(500).json({ error: 'Failed to fetch chapter progress' });
@@ -622,6 +626,39 @@ app.post('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) =
   } catch (error) {
     console.error('Error toggling chapter completion:', error);
     res.status(500).json({ error: 'Failed to toggle chapter completion' });
+  }
+});
+
+// Update audio progress
+app.post('/api/chapters/:chapterId/progress/audio', authMiddleware, async (req, res) => {
+  try {
+    const { isAudioFinished } = req.body;
+    
+    const snapshot = await db.collection('userProgress')
+      .where('userId', '==', req.user.id)
+      .where('chapterId', '==', req.params.chapterId)
+      .get();
+    
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({
+        isAudioFinished: isAudioFinished,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await db.collection('userProgress').add({
+        userId: req.user.id,
+        chapterId: req.params.chapterId,
+        isAudioFinished: isAudioFinished,
+        completed: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating audio progress:', error);
+    res.status(500).json({ error: 'Failed to update audio progress' });
   }
 });
 

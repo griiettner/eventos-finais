@@ -615,6 +615,21 @@ button {
   animation: spin 2s linear infinite;
 }
 
+.audio-finished-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 12px;
+  width: fit-content;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
 .chapter-detail-layout {
   min-height: 100vh;
   padding-top: 100px;

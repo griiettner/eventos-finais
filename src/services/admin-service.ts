@@ -261,11 +261,19 @@ export class AdminService {
     }));
   }
 
-  static async getChapterProgress(chapterId: string): Promise<{ is_completed: boolean }> {
-    const progress = await apiCall<{ isCompleted: boolean }>(`/api/chapters/${chapterId}/progress`);
+  static async getChapterProgress(chapterId: string): Promise<{ is_completed: boolean; is_audio_finished: boolean }> {
+    const progress = await apiCall<{ isCompleted: boolean; isAudioFinished: boolean }>(`/api/chapters/${chapterId}/progress`);
     return {
-      is_completed: progress.isCompleted
+      is_completed: progress.isCompleted,
+      is_audio_finished: progress.isAudioFinished || false
     };
+  }
+
+  static async updateAudioProgress(chapterId: string, isAudioFinished: boolean): Promise<void> {
+    await apiCall(`/api/chapters/${chapterId}/progress/audio`, {
+      method: 'POST',
+      body: JSON.stringify({ isAudioFinished })
+    });
   }
 
   static async toggleChapterCompletion(chapterId: string, isCompleted: boolean): Promise<void> {
