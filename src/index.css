@@ -397,9 +397,18 @@ button {
   padding: 2rem;
 }
 
-.hero-card {
-  max-width: 600px;
+.logo-wrapper {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
 }
+
+.landing-logo {
+  width: 180px;
+  height: auto;
+  filter: drop-shadow(0 0 30px rgba(193, 163, 95, 0.2));
+}
+
 
 .badge {
   display: inline-block;

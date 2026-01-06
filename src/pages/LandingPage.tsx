@@ -13,6 +13,14 @@ const LandingPage: React.FC = () => {
           transition={{ duration: 0.8 }}
           className='hero-card'
         >
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="logo-wrapper"
+          >
+            <img src="/logo.png" alt="Eventos Finais Logo" className="landing-logo" />
+          </motion.div>
           <div className='badge'>Estudo Bíblico Profundo</div>
           <h1>Estudos Eventos Finais</h1>
           <p className='subtitle'>
