@@ -1007,6 +1007,9 @@ button {
   justify-content: space-between;
   align-items: flex-end;
   margin-bottom: 3rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .admin-header h1 {
@@ -1578,6 +1581,43 @@ button {
 .btn-add-page:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
+}
+
+/* Floating Action Button (FAB) - Google Material Design Style */
+.fab-add-page {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  font-size: 24px;
+}
+
+.fab-add-page:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  transform: scale(1.05);
+}
+
+.fab-add-page:active {
+  transform: scale(0.95);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.fab-add-page:focus {
+  outline: none;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(76, 175, 80, 0.3);
 }
 
 .pages-list {

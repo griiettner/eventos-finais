@@ -269,13 +269,6 @@ const AddEditChapter: React.FC = () => {
             <div className="pages-section">
               <div className="pages-header">
                 <label>Páginas do Capítulo</label>
-                <button 
-                  type="button"
-                  onClick={addPage}
-                  className="btn-add-page"
-                >
-                  <Plus size={16} /> Adicionar Página
-                </button>
               </div>
 
               <div className="pages-list">
@@ -383,6 +376,16 @@ const AddEditChapter: React.FC = () => {
             />
           )}
         </AnimatePresence>
+
+        {/* Floating Action Button */}
+        <button
+          type="button"
+          onClick={addPage}
+          className="fab-add-page"
+          title="Adicionar Página"
+        >
+          <Plus size={24} />
+        </button>
       </main>
     </div>
   );
