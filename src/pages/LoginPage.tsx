@@ -39,7 +39,18 @@ const AppleIcon = () => (
 
 const LoginPage: React.FC = () => {
   const { login, register, isAuthenticated, isLoading: kindeLoading } = useKindeAuth();
-  const [isAppleDevice, setIsAppleDevice] = useState(false);
+  const [isAppleDevice] = useState(() => {
+    const storedDevice = localStorage.getItem('is_apple_device');
+    if (storedDevice !== null) {
+      return storedDevice === 'true';
+    }
+    const platform = navigator.platform.toLowerCase();
+    const isApple =
+      /iphone|ipad|ipod|macintosh|macintel/.test(platform) ||
+      (navigator.maxTouchPoints > 0 && /macintosh/.test(navigator.userAgent.toLowerCase()));
+    localStorage.setItem('is_apple_device', isApple.toString());
+    return isApple;
+  });
   const navigate = useNavigate();
 
   // Redirect if already authenticated
@@ -49,20 +60,6 @@ const LoginPage: React.FC = () => {
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
-    const storedDevice = localStorage.getItem('is_apple_device');
-    if (storedDevice !== null) {
-      setIsAppleDevice(storedDevice === 'true');
-    } else {
-      const platform = navigator.platform.toLowerCase();
-      const isApple =
-        /iphone|ipad|ipod|macintosh|macintel/.test(platform) ||
-        (navigator.maxTouchPoints > 0 && /macintosh/.test(navigator.userAgent.toLowerCase()));
-      localStorage.setItem('is_apple_device', isApple.toString());
-      setIsAppleDevice(isApple);
-    }
-  }, []);
 
   const signInWith = async (provider: 'google' | 'facebook' | 'apple') => {
     console.log('Starting OAuth with provider:', provider);
