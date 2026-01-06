@@ -35,7 +35,7 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Production stage
+# Frontend Production stage
 FROM nginx:alpine AS production
 
 # Copy built app to nginx
@@ -49,3 +49,23 @@ EXPOSE 80
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
+
+# API Production stage
+FROM node:20-alpine AS api-production
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install production dependencies only
+RUN npm ci --omit=dev
+
+# Copy server file
+COPY server-firestore.cjs ./
+
+# Expose port
+EXPOSE 3001
+
+# Start API server
+CMD ["node", "server-firestore.cjs"]

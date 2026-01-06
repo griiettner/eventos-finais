@@ -17,7 +17,7 @@ services:
   api:
     build:
       context: .
-      target: production
+      target: api-production
     ports:
       - "3001:3001"
     env_file:
@@ -25,5 +25,4 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-    command: node server-firestore.cjs
     restart: unless-stopped
