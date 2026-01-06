@@ -31,7 +31,7 @@ const QuestionsModal: React.FC<QuestionsModalProps> = ({ chapter, onClose, onSuc
 
   const addQuestion = () => {
     const newQuestion: Question = {
-      id: Date.now(),
+      id: Date.now().toString(),
       chapter_id: chapter.id,
       text: '',
       order_index: editingQuestions.length

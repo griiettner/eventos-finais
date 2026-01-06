@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, LogOut, Shield, ChevronDown, Edit, UserIcon } from 'lucide-react';
+import { LogOut, Shield, ChevronDown, Edit, UserIcon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 

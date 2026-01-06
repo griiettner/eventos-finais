@@ -208,7 +208,7 @@ export class FirebaseService {
     await deleteDoc(doc(db, 'questions', questionId));
   }
 
-  static async reorderQuestions(chapterId: string, questionIds: string[]): Promise<void> {
+  static async reorderQuestions(_chapterId: string, questionIds: string[]): Promise<void> {
     const batch = writeBatch(db);
     questionIds.forEach((id, index) => {
       const docRef = doc(db, 'questions', id);
@@ -260,7 +260,7 @@ export class FirebaseService {
     return docSnap.exists() ? docSnap.data() as Progress : null;
   }
 
-  static async updateProgress(chapterId: string, userId: string, progress: Partial<Progress>): Promise<void> {
+  static async updateProgress(chapterId: string, _userId: string, progress: Partial<Progress>): Promise<void> {
     await apiCall('/api/progress', {
       method: 'POST',
       body: JSON.stringify({
