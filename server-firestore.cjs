@@ -137,7 +137,77 @@ const upload = multer({
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Serve uploaded files statically
+// Handle OPTIONS preflight for audio files (iOS Safari compatibility)
+app.options('/uploads/audio/:filename', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Range');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+  res.sendStatus(204);
+});
+
+// Serve uploaded audio files with Range Request support (required for iOS Safari)
+app.get('/uploads/audio/:filename', (req, res) => {
+  const filePath = path.join(UPLOADS_DIR, req.params.filename);
+  
+  // Set CORS headers for audio streaming (iOS Safari compatibility)
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Range');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Audio file not found' });
+  }
+  
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+  
+  // Determine content type based on file extension
+  const ext = path.extname(req.params.filename).toLowerCase();
+  const mimeTypes = {
+    '.mp3': 'audio/mpeg',
+    '.m4a': 'audio/mp4',
+    '.aac': 'audio/aac',
+    '.wav': 'audio/wav',
+    '.ogg': 'audio/ogg',
+    '.webm': 'audio/webm'
+  };
+  const contentType = mimeTypes[ext] || 'audio/mpeg';
+  
+  if (range) {
+    // Handle Range Request (required for iOS Safari audio playback)
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunkSize = (end - start) + 1;
+    
+    const file = fs.createReadStream(filePath, { start, end });
+    
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunkSize,
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=31536000'
+    });
+    
+    file.pipe(res);
+  } else {
+    // No range request - send entire file
+    res.writeHead(200, {
+      'Content-Length': fileSize,
+      'Content-Type': contentType,
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=31536000'
+    });
+    
+    fs.createReadStream(filePath).pipe(res);
+  }
+});
+
+// Serve other uploaded files statically (non-audio)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request logging

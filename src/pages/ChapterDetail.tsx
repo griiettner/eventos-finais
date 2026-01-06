@@ -454,14 +454,17 @@ useEffect(() => {
             <div className='custom-audio-player'>
               <div className='player-controls'>
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     if (audioRef.current) {
                       if (isPlaying) {
                         audioRef.current.pause();
                       } else {
-                        audioRef.current.play();
+                        try {
+                          await audioRef.current.play();
+                        } catch (error) {
+                          console.error('Audio play failed:', error);
+                        }
                       }
-                      setIsPlaying(!isPlaying);
                     }
                   }} 
                   className='play-btn'
@@ -545,6 +548,10 @@ useEffect(() => {
               <audio
                 ref={audioRef}
                 src={getAudioUrl(chapter.audio_url)}
+                preload="metadata"
+                playsInline
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
                 onTimeUpdate={() => {
                   if (audioRef.current) {
                     setCurrentTime(audioRef.current.currentTime);
@@ -555,8 +562,9 @@ useEffect(() => {
                     setDuration(audioRef.current.duration);
                     audioRef.current.volume = volume;
                     if (searchParams.get('autoPlay') === 'true') {
-                      audioRef.current.play();
-                      setIsPlaying(true);
+                      audioRef.current.play().catch(err => {
+                        console.warn('Autoplay blocked:', err);
+                      });
                     }
                   }
                 }}
