@@ -43,13 +43,23 @@ try {
       
       console.log('[Firebase Init] Original key preview:', privateKey.substring(0, 50) + '...');
       
-      // Remove surrounding quotes if present
+      // Trim whitespace
       privateKey = privateKey.trim();
+      
+      // Remove surrounding quotes if present (handles both " and ')
       if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || 
           (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
         privateKey = privateKey.slice(1, -1);
         console.log('[Firebase Init] Removed surrounding quotes from key');
       }
+      
+      // Replace escaped backslashes and quotes that appear in string literals
+      privateKey = privateKey.replace(/\\\\/g, '\\').replace(/\\"/g, '"');
+      
+      // Replace escaped newlines with actual newlines
+      privateKey = privateKey.replace(/\\n/g, '\n');
+      
+      console.log('[Firebase Init] After unescape preview:', privateKey.substring(0, 50) + '...');
       
       // If the key doesn't start with -----BEGIN, it might be base64 encoded
       if (!privateKey.includes('-----BEGIN')) {
@@ -61,9 +71,6 @@ try {
           console.error('[Firebase Init] Failed to decode base64 private key:', e.message);
         }
       }
-      
-      // Replace escaped newlines with actual newlines
-      privateKey = privateKey.replace(/\\n/g, '\n');
       
       // Ensure proper PEM format
       if (!privateKey.endsWith('\n')) {
