@@ -121,8 +121,7 @@ export class AdminService {
   }
 
   static async deleteQuestion(id: string): Promise<void> {
-    // Note: API doesn't have delete question endpoint yet, would need to add it
-    throw new Error('Delete question not implemented in API yet');
+    await apiCall(`/api/questions/${id}`, { method: 'DELETE' });
   }
 
   static async reorderQuestions(chapterId: string, questionIds: string[]): Promise<void> {

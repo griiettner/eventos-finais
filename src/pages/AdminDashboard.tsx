@@ -4,9 +4,8 @@ import { AnimatePresence } from 'framer-motion';
 import { BookOpen, Plus, FileAudio, MessageSquare, Trash, Edit, ArrowLeft } from 'lucide-react';
 import { AdminService, type Chapter } from '../services/admin-service';
 import AudioUploadModal from '../components/AudioUploadModal';
-import QuestionsModal from '../components/QuestionsModal';
 
-type ModalType = 'audio' | 'questions';
+type ModalType = 'audio';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -44,7 +43,7 @@ const AdminDashboard: React.FC = () => {
     loadChapters();
   };
 
-  const handleDeleteChapter = async (chapterId: number) => {
+  const handleDeleteChapter = async (chapterId: string) => {
     if (!confirm('Excluir capítulo? Esta ação não pode ser desfeita.')) return;
     try {
       await AdminService.deleteChapter(chapterId);
@@ -119,7 +118,7 @@ const AdminDashboard: React.FC = () => {
                           <button onClick={() => openModal('audio', chapter)} className="action-btn btn-audio" title="Upload Áudio">
                             <FileAudio size={14} /> ÁUDIO
                           </button>
-                          <button onClick={() => openModal('questions', chapter)} className="action-btn btn-questions" title="Gerenciar Perguntas">
+                          <button onClick={() => navigate(`/admin/chapter/${chapter.id}/questions`)} className="action-btn btn-questions" title="Gerenciar Perguntas">
                             <MessageSquare size={14} /> PERGUNTAS
                           </button>
                           <button onClick={() => handleDeleteChapter(chapter.id)} className="delete-icon-btn" title="Excluir Capítulo">
@@ -138,9 +137,6 @@ const AdminDashboard: React.FC = () => {
         <AnimatePresence>
           {activeModal === 'audio' && selectedChapter && (
             <AudioUploadModal chapter={selectedChapter} onClose={closeModal} onSuccess={handleModalSuccess} />
-          )}
-          {activeModal === 'questions' && selectedChapter && (
-            <QuestionsModal chapter={selectedChapter} onClose={closeModal} onSuccess={handleModalSuccess} />
           )}
         </AnimatePresence>
       </main>

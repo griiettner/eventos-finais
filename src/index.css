@@ -1989,6 +1989,52 @@ button {
   color: var(--accent);
 }
 
+/* Questions Page Styles */
+.questions-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.question-item-page {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+
+.question-item-page:hover {
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.question-header-page {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.question-number-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.question-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 /* Animations */
 .spin {
   animation: spin 2s linear infinite;

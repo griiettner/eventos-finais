@@ -8,6 +8,7 @@ import ChapterDetail from './pages/ChapterDetail';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AddEditChapter from './pages/AddEditChapter';
+import ChapterQuestions from './pages/ChapterQuestions';
 import AdminRoute from './components/AdminRoute';
 import { AnimatePresence } from 'framer-motion';
 
@@ -86,6 +87,14 @@ const AppContent: React.FC = () => {
             element={
               <AdminRoute>
                 <AddEditChapter />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path='/admin/chapter/:id/questions'
+            element={
+              <AdminRoute>
+                <ChapterQuestions />
               </AdminRoute>
             }
           />

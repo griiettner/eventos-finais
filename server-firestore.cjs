@@ -227,14 +227,29 @@ app.delete('/api/chapters/:id', authMiddleware, adminMiddleware, async (req, res
 // Get questions for a chapter (authenticated users)
 app.get('/api/chapters/:chapterId/questions', authMiddleware, async (req, res) => {
   try {
-    const snapshot = await db.collection('questions')
-      .where('chapterId', '==', req.params.chapterId)
-      .orderBy('orderIndex')
-      .get();
-    const questions = snapshot.docs.map(doc => ({
+    // Try with orderBy first, if index doesn't exist, fall back to simple query
+    let snapshot;
+    try {
+      snapshot = await db.collection('questions')
+        .where('chapterId', '==', req.params.chapterId)
+        .orderBy('orderIndex')
+        .get();
+    } catch (indexError) {
+      // Fallback: fetch without orderBy and sort in memory
+      console.warn('Firestore index missing for questions orderIndex, using fallback');
+      snapshot = await db.collection('questions')
+        .where('chapterId', '==', req.params.chapterId)
+        .get();
+    }
+    
+    let questions = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    
+    // Sort in memory if needed
+    questions.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    
     res.json(questions);
   } catch (error) {
     console.error('Error fetching questions:', error);
@@ -259,6 +274,17 @@ app.post('/api/chapters/:chapterId/questions', authMiddleware, adminMiddleware, 
   } catch (error) {
     console.error('Error creating question:', error);
     res.status(500).json({ error: 'Failed to create question' });
+  }
+});
+
+// Delete question (admin only)
+app.delete('/api/questions/:questionId', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    await db.collection('questions').doc(req.params.questionId).delete();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting question:', error);
+    res.status(500).json({ error: 'Failed to delete question' });
   }
 });
 
