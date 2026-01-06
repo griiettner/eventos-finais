@@ -5,6 +5,7 @@ import { useAuth } from './hooks/useAuth';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import ChapterDetail from './pages/ChapterDetail';
+import UpdateBanner from './components/UpdateBanner';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AddEditChapter from './pages/AddEditChapter';
@@ -104,6 +105,7 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
+        <UpdateBanner />
         <AppContent />
       </Router>
     </AuthProvider>
