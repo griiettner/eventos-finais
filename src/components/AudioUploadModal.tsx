@@ -17,6 +17,14 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasAudio = !!chapter.audio_url;
+  
+  // Build full URL for display (path is stored relative in DB)
+  const getAudioUrl = (path: string | undefined) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path; // Already full URL (legacy)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    return `${apiUrl}${path}`;
+  };
 
   const handleAudioUpload = async () => {
     if (!audioFile) return;
@@ -24,9 +32,7 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
     setIsUploading(true);
     try {
       const audioPath = await AdminService.uploadAudioFile(chapter.id, audioFile);
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const audioUrl = `${apiUrl}${audioPath}`;
-      await AdminService.updateChapter(chapter.id, { audio_url: audioUrl });
+      await AdminService.updateChapter(chapter.id, { audio_url: audioPath });
       onSuccess();
       onClose();
     } catch (error) {
@@ -106,7 +112,7 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
               <>
                 <div className="current-audio">
                   <label>Áudio Atual</label>
-                  <audio src={chapter.audio_url} controls className="audio-player" />
+                  <audio src={getAudioUrl(chapter.audio_url)} controls className="audio-player" />
                 </div>
 
                 {!showReplaceInput ? (
