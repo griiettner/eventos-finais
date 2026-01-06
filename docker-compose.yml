@@ -4,8 +4,8 @@ services:
     build:
       context: .
       target: production
-    expose:
-      - 80
+    ports:
+      - "8002:80"
     environment:
       - NODE_ENV=production
       - VITE_API_URL=http://api:3001
@@ -18,8 +18,8 @@ services:
     build:
       context: .
       target: api-production
-    expose:
-      - 3001
+    ports:
+      - "3001:3001"
     env_file:
       - .env
     environment:
