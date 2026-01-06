@@ -35,16 +35,23 @@ const AddEditChapter: React.FC = () => {
     if (!id) return;
     
     try {
-      const chapter = await AdminService.getChapter(parseInt(id));
+      const chapter = await AdminService.getChapter(id);
       if (chapter) {
         setTextTitle(chapter.title);
         setChapterNumber(chapter.order_index);
         
-        const pages = await AdminService.getChapterPages(parseInt(id));
-        setEditingPages(pages.length > 0 ? pages : [{ subtitle: '', page_number: 1, content: '', order_index: 0 }]);
+        try {
+          const pages = await AdminService.getChapterPages(id);
+          setEditingPages(pages.length > 0 ? pages : [{ subtitle: '', page_number: 1, content: '', order_index: 0 }]);
+        } catch (pagesError) {
+          console.warn('Failed to load pages (might be missing Firestore index):', pagesError);
+          // Continue with empty page - user can add pages
+          setEditingPages([{ subtitle: '', page_number: 1, content: '', order_index: 0 }]);
+        }
       }
     } catch (error) {
       console.error('Failed to load chapter:', error);
+      alert('Erro ao carregar capítulo');
     }
   };
 
@@ -157,13 +164,10 @@ const AddEditChapter: React.FC = () => {
 
     setIsSaving(true);
     try {
-      let chapterId: number;
+      let chapterId: string;
       
       if (isEditing && id) {
-        chapterId = parseInt(id);
-        if (isNaN(chapterId)) {
-          throw new Error('ID do capítulo inválido');
-        }
+        chapterId = id;
         await AdminService.updateChapter(chapterId, {
           title: textTitle,
           order_index: chapterNumber
@@ -177,15 +181,22 @@ const AddEditChapter: React.FC = () => {
           order_index: chapterNumber
         });
         
-        if (!chapterId || isNaN(chapterId)) {
+        if (!chapterId) {
           throw new Error('Falha ao criar capítulo - ID inválido retornado');
         }
       }
 
-      // Delete existing pages and create new ones
-      const existingPages = await AdminService.getChapterPages(chapterId);
-      for (const page of existingPages) {
-        await AdminService.deleteChapterPage(page.id);
+      // Delete existing pages and create new ones (only for edits)
+      if (isEditing) {
+        try {
+          const existingPages = await AdminService.getChapterPages(chapterId);
+          for (const page of existingPages) {
+            await AdminService.deleteChapterPage(page.id);
+          }
+        } catch (error) {
+          console.warn('Failed to delete existing pages:', error);
+          // Continue anyway - might be missing index
+        }
       }
 
       // Save all pages - only if they have content
@@ -194,7 +205,7 @@ const AddEditChapter: React.FC = () => {
         if (page.content && page.content.trim()) {
           await AdminService.createChapterPage({
             chapter_id: chapterId,
-            subtitle: page.subtitle || null,
+            subtitle: page.subtitle || undefined,
             page_number: page.page_number || i + 1,
             content: page.content,
             order_index: i

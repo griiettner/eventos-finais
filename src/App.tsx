@@ -10,7 +10,6 @@ import AdminDashboard from './pages/AdminDashboard';
 import AddEditChapter from './pages/AddEditChapter';
 import AdminRoute from './components/AdminRoute';
 import { AnimatePresence } from 'framer-motion';
-import SyncManager from './components/SyncManager';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -92,7 +91,6 @@ const AppContent: React.FC = () => {
           />
         </Routes>
       </AnimatePresence>
-      <SyncManager />
     </>
   );
 };

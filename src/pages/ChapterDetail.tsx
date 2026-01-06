@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Play, Pause, Type, Moon, Sun, Book, Save, Volume2, CheckCircle2, X, ChevronRight } from 'lucide-react';
-import { DBService } from '../db/db-service';
 import { AdminService, type ChapterPage } from '../services/admin-service';
 import ContentModal from '../components/ContentModal';
 

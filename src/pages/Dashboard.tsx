@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Play, CheckCircle2 } from 'lucide-react';
-import { DBService } from '../db/db-service';
 import UserMenu from '../components/UserMenu';
 
 interface ProgressRow {

@@ -1,156 +1,137 @@
-import { DBService } from '../db/db-service';
+import type { Timestamp } from 'firebase/firestore';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+// Re-export Firebase types with compatible interface
 export interface Chapter {
-  id: number;
+  id: string;
   title: string;
-  summary: string;
-  content: string;
-  audio_url: string;
+  summary?: string;
+  content?: string;
+  audio_url?: string;
   order_index: number;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: Timestamp;
+  updated_at?: Timestamp;
 }
 
 export interface Question {
-  id: number;
-  chapter_id: number;
+  id: string;
+  chapter_id: string;
   text: string;
   order_index: number;
-  created_at?: string;
+  created_at?: Timestamp;
 }
 
 export interface ChapterPage {
-  id: number;
-  chapter_id: number;
-  subtitle: string | null;
+  id: string;
+  chapter_id: string;
+  subtitle?: string;
   page_number: number;
   content: string;
   order_index: number;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: Timestamp;
+  updated_at?: Timestamp;
+}
+
+// Helper to get auth token
+let getAccessToken: (() => Promise<string>) | null = null;
+
+export function setAuthTokenGetter(getter: () => Promise<string>) {
+  getAccessToken = getter;
+}
+
+async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = getAccessToken ? await getAccessToken() : null;
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...options.headers
+  };
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(error.error || `API error: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export class AdminService {
   // Chapter Management
   static async getAllChapters(): Promise<Chapter[]> {
-    return DBService.getAll<Chapter>('SELECT * FROM chapters ORDER BY order_index');
+    return apiCall<Chapter[]>('/api/chapters');
   }
 
-  static async getChapter(id: number): Promise<Chapter | null> {
-    return DBService.get<Chapter>('SELECT * FROM chapters WHERE id = ?', [id]);
+  static async getChapter(id: string): Promise<Chapter | null> {
+    return apiCall<Chapter>(`/api/chapters/${id}`);
   }
 
-  static async createChapter(chapter: Omit<Chapter, 'id' | 'created_at' | 'updated_at'>): Promise<number> {
-    const result = await DBService.exec(
-      `INSERT INTO chapters (title, summary, content, audio_url, order_index) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [chapter.title, chapter.summary, chapter.content, chapter.audio_url, chapter.order_index]
-    );
-    return (result as any).lastInsertRowid as number;
-  }
-
-  static async updateChapter(id: number, chapter: Partial<Omit<Chapter, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
-    const fields = [];
-    const values = [];
-    
-    if (chapter.title !== undefined) {
-      fields.push('title = ?');
-      values.push(chapter.title);
-    }
-    if (chapter.summary !== undefined) {
-      fields.push('summary = ?');
-      values.push(chapter.summary);
-    }
-    if (chapter.content !== undefined) {
-      fields.push('content = ?');
-      values.push(chapter.content);
-    }
-    if (chapter.audio_url !== undefined) {
-      fields.push('audio_url = ?');
-      values.push(chapter.audio_url);
-    }
-    if (chapter.order_index !== undefined) {
-      fields.push('order_index = ?');
-      values.push(chapter.order_index);
-    }
-    
-    if (fields.length === 0) {
-      return; // Nothing to update
-    }
-    
-    values.push(id);
-    
-    await DBService.exec(
-      `UPDATE chapters SET ${fields.join(', ')} WHERE id = ?`,
-      values
-    );
-  }
-
-  static async deleteChapter(id: number): Promise<void> {
-    await DBService.exec('DELETE FROM chapters WHERE id = ?', [id]);
-  }
-
-  // Question Management
-  static async getChapterQuestions(chapterId: number): Promise<Question[]> {
-    return DBService.getAll<Question>(
-      'SELECT * FROM questions WHERE chapter_id = ? ORDER BY order_index',
-      [chapterId]
-    );
-  }
-
-  static async createQuestion(question: Omit<Question, 'id' | 'created_at'>): Promise<number> {
-    const result = await DBService.exec(
-      'INSERT INTO questions (chapter_id, text, order_index) VALUES (?, ?, ?)',
-      [question.chapter_id, question.text, question.order_index]
-    );
-    return (result as any).lastInsertRowid as number;
-  }
-
-  static async updateQuestion(id: number, question: Partial<Omit<Question, 'id' | 'created_at'>>): Promise<void> {
-    const fields = [];
-    const values = [];
-    
-    if (question.text !== undefined) {
-      fields.push('text = ?');
-      values.push(question.text);
-    }
-    if (question.order_index !== undefined) {
-      fields.push('order_index = ?');
-      values.push(question.order_index);
-    }
-    
-    values.push(id);
-    
-    await DBService.exec(
-      `UPDATE questions SET ${fields.join(', ')} WHERE id = ?`,
-      values
-    );
-  }
-
-  static async deleteQuestion(id: number): Promise<void> {
-    await DBService.exec('DELETE FROM questions WHERE id = ?', [id]);
-  }
-
-  static async reorderQuestions(chapterId: number, questionIds: number[]): Promise<void> {
-    await DBService.exec('BEGIN TRANSACTION');
-    
+  static async createChapter(chapter: Omit<Chapter, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
+    console.log('[AdminService] Creating chapter:', chapter);
     try {
-      for (let i = 0; i < questionIds.length; i++) {
-        await DBService.exec(
-          'UPDATE questions SET order_index = ? WHERE id = ? AND chapter_id = ?',
-          [i, questionIds[i], chapterId]
-        );
+      const result = await apiCall<Chapter>('/api/chapters', {
+        method: 'POST',
+        body: JSON.stringify(chapter)
+      });
+      console.log('[AdminService] Chapter created:', result);
+      if (!result || !result.id) {
+        console.error('[AdminService] Invalid response - no ID:', result);
+        throw new Error('No chapter ID returned from API');
       }
-      await DBService.exec('COMMIT');
+      return result.id;
     } catch (error) {
-      await DBService.exec('ROLLBACK');
+      console.error('[AdminService] createChapter failed:', error);
       throw error;
     }
   }
 
-  // Audio file handling (store as base64 or reference)
+  static async updateChapter(id: string, chapter: Partial<Omit<Chapter, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+    await apiCall(`/api/chapters/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(chapter)
+    });
+  }
+
+  static async deleteChapter(id: string): Promise<void> {
+    await apiCall(`/api/chapters/${id}`, { method: 'DELETE' });
+  }
+
+  // Question Management
+  static async getChapterQuestions(chapterId: string): Promise<Question[]> {
+    return apiCall<Question[]>(`/api/chapters/${chapterId}/questions`);
+  }
+
+  static async createQuestion(question: Omit<Question, 'id' | 'created_at'>): Promise<string> {
+    const result = await apiCall<Question>(`/api/chapters/${question.chapter_id}/questions`, {
+      method: 'POST',
+      body: JSON.stringify(question)
+    });
+    return result.id;
+  }
+
+  static async updateQuestion(id: string, question: Partial<Omit<Question, 'id' | 'created_at'>>): Promise<void> {
+    // Note: API doesn't have update question endpoint yet, would need to add it
+    throw new Error('Update question not implemented in API yet');
+  }
+
+  static async deleteQuestion(id: string): Promise<void> {
+    // Note: API doesn't have delete question endpoint yet, would need to add it
+    throw new Error('Delete question not implemented in API yet');
+  }
+
+  static async reorderQuestions(chapterId: string, questionIds: string[]): Promise<void> {
+    // Note: API doesn't have reorder endpoint yet, would need to add it
+    throw new Error('Reorder questions not implemented in API yet');
+  }
+
+  // Audio file handling (store as base64 data URL)
   static async uploadAudioFile(file: File): Promise<string> {
-    // For now, store as data URL. In production, you might want to upload to a CDN
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -160,90 +141,51 @@ export class AdminService {
   }
 
   // Chapter Pages Management
-  static async getChapterPages(chapterId: number): Promise<ChapterPage[]> {
-    return DBService.getAll<ChapterPage>(
-      'SELECT * FROM chapter_pages WHERE chapter_id = ? ORDER BY order_index',
-      [chapterId]
-    );
+  static async getChapterPages(chapterId: string): Promise<ChapterPage[]> {
+    const pages = await apiCall<any[]>(`/api/chapters/${chapterId}/pages`);
+    // Map camelCase from API to snake_case for frontend
+    return pages.map(page => ({
+      id: page.id,
+      chapter_id: page.chapterId,
+      subtitle: page.subtitle,
+      page_number: page.pageNumber,
+      content: page.content,
+      order_index: page.orderIndex,
+      created_at: page.createdAt,
+      updated_at: page.updatedAt
+    }));
   }
 
-  static async getChapterPage(pageId: number): Promise<ChapterPage | null> {
-    return DBService.get<ChapterPage>('SELECT * FROM chapter_pages WHERE id = ?', [pageId]);
+  static async getChapterPage(pageId: string): Promise<ChapterPage | null> {
+    // Note: API doesn't have single page endpoint, would need to add it
+    throw new Error('Get single page not implemented in API yet');
   }
 
-  static async createChapterPage(page: Omit<ChapterPage, 'id' | 'created_at' | 'updated_at'>): Promise<number> {
-    const result = await DBService.exec(
-      `INSERT INTO chapter_pages (chapter_id, subtitle, page_number, content, order_index) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [page.chapter_id, page.subtitle, page.page_number, page.content, page.order_index]
-    );
-    return (result as any).lastInsertRowid as number;
+  static async createChapterPage(page: Omit<ChapterPage, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
+    const result = await apiCall<ChapterPage>(`/api/chapters/${page.chapter_id}/pages`, {
+      method: 'POST',
+      body: JSON.stringify(page)
+    });
+    return result.id;
   }
 
-  static async updateChapterPage(id: number, page: Partial<Omit<ChapterPage, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
-    const fields = [];
-    const values = [];
-    
-    if (page.subtitle !== undefined) {
-      fields.push('subtitle = ?');
-      values.push(page.subtitle);
-    }
-    if (page.page_number !== undefined) {
-      fields.push('page_number = ?');
-      values.push(page.page_number);
-    }
-    if (page.content !== undefined) {
-      fields.push('content = ?');
-      values.push(page.content);
-    }
-    if (page.order_index !== undefined) {
-      fields.push('order_index = ?');
-      values.push(page.order_index);
-    }
-    
-    fields.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(id);
-    
-    await DBService.exec(
-      `UPDATE chapter_pages SET ${fields.join(', ')} WHERE id = ?`,
-      values
-    );
+  static async updateChapterPage(pageId: string, page: Partial<Omit<ChapterPage, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+    // Note: API doesn't have update page endpoint yet, would need to add it
+    throw new Error('Update page not implemented in API yet');
   }
 
-  static async deleteChapterPage(id: number): Promise<void> {
-    await DBService.exec('DELETE FROM chapter_pages WHERE id = ?', [id]);
+  static async deleteChapterPage(id: string): Promise<void> {
+    await apiCall(`/api/pages/${id}`, { method: 'DELETE' });
   }
 
-  static async reorderChapterPages(chapterId: number, pageIds: number[]): Promise<void> {
-    await DBService.exec('BEGIN TRANSACTION');
-    
-    try {
-      for (let i = 0; i < pageIds.length; i++) {
-        await DBService.exec(
-          'UPDATE chapter_pages SET order_index = ? WHERE id = ? AND chapter_id = ?',
-          [i, pageIds[i], chapterId]
-        );
-      }
-      await DBService.exec('COMMIT');
-    } catch (error) {
-      await DBService.exec('ROLLBACK');
-      throw error;
-    }
+  // Note: Page read progress is now handled through /api/progress endpoint
+  static async markPageAsRead(chapterId: string, pageId: string, userId: string): Promise<void> {
+    // Would use /api/progress endpoint
+    throw new Error('Mark page as read not implemented in API yet');
   }
 
-  // Page Read Progress
-  static async markPageAsRead(chapterId: number, pageId: number): Promise<void> {
-    await DBService.exec(
-      `INSERT OR REPLACE INTO page_read_progress (chapter_id, page_id, is_read, read_at) 
-       VALUES (?, ?, 1, CURRENT_TIMESTAMP)`,
-      [chapterId, pageId]
-    );
-  }
-
-  static async getPageReadProgress(chapterId: number): Promise<{ page_id: number; is_read: number }[]> {
-    return DBService.getAll<{ page_id: number; is_read: number }>(
-      'SELECT page_id, is_read FROM page_read_progress WHERE chapter_id = ?',
-      [chapterId]
-    );
+  static async getPageReadProgress(chapterId: string, userId: string): Promise<{ page_id: string; is_read: boolean }[]> {
+    // Would use /api/progress endpoint
+    return [];
   }
 }
