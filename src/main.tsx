@@ -11,7 +11,6 @@ createRoot(document.getElementById('root')!).render(
       domain={import.meta.env.VITE_KINDE_DOMAIN || ''}
       redirectUri={import.meta.env.VITE_KINDE_REDIRECT_URL || window.location.origin}
       logoutUri={import.meta.env.VITE_KINDE_LOGOUT_URL || window.location.origin}
-      audience={import.meta.env.VITE_API_URL || 'http://localhost:3001'}
     >
       <App />
     </KindeProvider>
