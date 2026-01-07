@@ -18,12 +18,10 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
 
   const hasAudio = !!chapter.audio_url;
   
-  // Build full URL for display (path is stored relative in DB)
+  // Build full URL for display (now stored as full URL in Firestore)
   const getAudioUrl = (path: string | undefined) => {
     if (!path) return '';
-    if (path.startsWith('http')) return path; // Already full URL (legacy)
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-    return `${apiUrl}${path}`;
+    return path;
   };
 
   const handleAudioUpload = async () => {

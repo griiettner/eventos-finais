@@ -27,6 +27,8 @@ const ChapterDetail: React.FC = () => {
   const [fontSize, setFontSize] = useState(18);
   const [isLoading, setIsLoading] = useState(true);
   const [isHeaderSticky, setIsHeaderSticky] = useState(false);
+  const [showStickyIndicator, setShowStickyIndicator] = useState(false);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
 
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [pages, setPages] = useState<ChapterPage[]>([]);
@@ -43,12 +45,10 @@ const ChapterDetail: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
 
-  // Build full URL for audio (path is stored relative in DB)
+  // Build full URL for audio (now stored as full URL in Firestore)
   const getAudioUrl = (path: string | undefined) => {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-    return `${apiUrl}${path}`;
+    return path;
   };
 
   // Format time in MM:SS
@@ -120,6 +120,16 @@ const ChapterDetail: React.FC = () => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsHeaderSticky(scrollY > 40);
+
+      // Check if we are still within the content area
+      if (contentAreaRef.current) {
+        const rect = contentAreaRef.current.getBoundingClientRect();
+        // The indicator should show only when the content area is being scrolled through
+        // and the bottom of the content area hasn't reached the header yet
+        const headerHeight = 80;
+        const isWithinContent = rect.top < headerHeight && rect.bottom > headerHeight + 40;
+        setShowStickyIndicator(isWithinContent);
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -406,7 +416,7 @@ const ChapterDetail: React.FC = () => {
           </button>
         </div>
         
-        <div className={`sticky-page-indicator ${isHeaderSticky ? 'visible' : ''}`}>
+        <div className={`sticky-page-indicator ${showStickyIndicator ? 'visible' : ''}`}>
           Página {currentPage?.page_number || currentPageIndex + 1} de {totalPagesInChapter}
         </div>
       </header>
@@ -421,6 +431,7 @@ const ChapterDetail: React.FC = () => {
         ) : (
           <>
             <motion.div
+              ref={contentAreaRef}
               key={currentPageIndex}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}

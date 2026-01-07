@@ -133,8 +133,23 @@ const upload = multer({
   }
 });
 
-// Middleware
-app.use(cors());
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'https://eventosfinais.jaxreset.com'
+  ];
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true
+  }));
 app.use(express.json({ limit: '50mb' }));
 
 // Force cache invalidation for critical PWA files
@@ -200,15 +215,39 @@ app.get('/uploads/audio/:filename', (req, res) => {
   console.log('Audio request received:', { 
     filename: req.params.filename, 
     filePath,
-    userAgent: req.headers['user-agent']
+    userAgent: req.headers['user-agent'],
+    origin: req.headers.origin
   });
   
-  // Set CORS headers for audio streaming (iOS Safari and Android Chrome compatibility)
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'https://eventosfinais.jaxreset.com'
+  ];
+  const origin = req.headers.origin;
+  const referer = req.headers.referer;
+
+  // Block direct access by checking Referer or Origin
+  const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+  const isAllowedReferer = referer && allowedOrigins.some(ao => referer.startsWith(ao));
+
+  if (!isAllowedOrigin && !isAllowedReferer) {
+    console.warn('Blocked direct access attempt to audio:', req.params.filename);
+    return res.status(403).json({ error: 'Direct access not allowed' });
+  }
+
+  if (isAllowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (isAllowedReferer) {
+    const matchingOrigin = allowedOrigins.find(ao => referer.startsWith(ao));
+    res.setHeader('Access-Control-Allow-Origin', matchingOrigin);
+  }
+
+  res.setHeader('Content-Disposition', 'inline');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type');
   res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length, Content-Type');
-  res.setHeader('Access-Control-Allow-Credentials', 'false');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (!fs.existsSync(filePath)) {
     console.error('Audio file not found:', filePath);
@@ -247,8 +286,7 @@ app.get('/uploads/audio/:filename', (req, res) => {
       'Accept-Ranges': 'bytes',
       'Content-Length': chunkSize,
       'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=31536000',
-      'Access-Control-Allow-Origin': '*'
+      'Cache-Control': 'public, max-age=31536000'
     });
     
     file.pipe(res);
@@ -258,8 +296,7 @@ app.get('/uploads/audio/:filename', (req, res) => {
       'Content-Length': fileSize,
       'Content-Type': contentType,
       'Accept-Ranges': 'bytes',
-      'Cache-Control': 'public, max-age=31536000',
-      'Access-Control-Allow-Origin': '*'
+      'Cache-Control': 'public, max-age=31536000'
     });
     
     fs.createReadStream(filePath).pipe(res);
@@ -433,7 +470,9 @@ app.post('/api/chapters/:id/audio', authMiddleware, adminMiddleware, upload.sing
     }
 
     // Build the URL to access the uploaded file
-    const audioUrl = `/uploads/audio/${req.file.filename}`;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.headers.host;
+    const audioUrl = `${protocol}://${host}/uploads/audio/${req.file.filename}`;
 
     res.json({ audioUrl, filename: req.file.filename });
   } catch (error) {
