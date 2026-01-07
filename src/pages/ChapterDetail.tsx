@@ -1,9 +1,14 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Type, Moon, Sun, Book, Save, CheckCircle2, X, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
-import { AdminService, type ChapterPage, type Chapter } from '../services/admin-service';
+import { AnimatePresence, motion } from 'framer-motion';
+import { 
+  CheckCircle2, ChevronLeft, ChevronRight, 
+  Save, Moon, Book, Sun, 
+  Type, Pause, Play, VolumeX, Volume2, X 
+} from 'lucide-react';
+import { AdminService, type Chapter, type ChapterPage } from '../services/admin-service';
 import ContentModal from '../components/ContentModal';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 import { useAuth } from '../hooks/useAuth';
 
 const ChapterDetail: React.FC = () => {
@@ -11,23 +16,21 @@ const ChapterDetail: React.FC = () => {
   const navigate = useNavigate();
   const { loading: authLoading } = useAuth();
   
-  const [chapter, setChapter] = useState<Chapter | null>(null);
-  const [pages, setPages] = useState<ChapterPage[]>([]);
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [readPages, setReadPages] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
-  const [questions, setQuestions] = useState<{ id: string; text: string }[]>([]);
-
-  const [fontSize, setFontSize] = useState(18);
-  const [theme, setTheme] = useState<'dark' | 'sepia' | 'light'>('dark');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [modalContent, setModalContent] = useState<{ title: string; content: string } | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isAudioFinished, setIsAudioFinished] = useState(false);
-  const [modalContent, setModalContent] = useState<{ title: string; content: string } | null>(null);
+  const [readPages, setReadPages] = useState<Set<string>>(new Set());
+  const [theme, setTheme] = useState<'dark' | 'sepia' | 'light'>('dark');
+  const [fontSize, setFontSize] = useState(18);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Ref to store current answers for saving (avoids dependency cycle)
+  const [chapter, setChapter] = useState<Chapter | null>(null);
+  const [pages, setPages] = useState<ChapterPage[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [questions, setQuestions] = useState<{ id: string; text: string }[]>([]);
   const answersRef = useRef<Record<string, string>>({});
 
   // Audio player state
@@ -155,82 +158,32 @@ useEffect(() => {
     }
   };
 
-  const getModalContent = (modalId: string): string => {
-    try {
-      // Decode base64 content embedded in the link
-      const decodedContent = decodeURIComponent(atob(modalId));
-      return decodedContent;
-    } catch {
-      // If decoding fails, return error message
-      return `Erro ao carregar conteúdo do modal. O conteúdo pode estar corrompido.`;
+  const getModalContent = useCallback((modalId: string): string => {
+    // Check if it's a reference ID in the current page's content_modals
+    const currentPageModals = pages[currentPageIndex]?.content_modals;
+    if (currentPageModals && currentPageModals[modalId]) {
+      return currentPageModals[modalId].content;
     }
-  };
+    
+    console.warn('Modal content ID reference not found on current page:', modalId);
+    return 'Conteúdo não encontrado.';
+  }, [pages, currentPageIndex]);
+
+  const handleModalClick = useCallback((title: string, modalId: string) => {
+    const content = getModalContent(modalId);
+    setModalContent({
+      title,
+      content
+    });
+  }, [getModalContent]);
 
   const renderContent = (content: string) => {
-    const parts: (string | React.ReactNode)[] = [];
-    let currentIndex = 0;
-    
-    // Combined regex for bold, italic, and links
-    const formatRegex = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|\[([^\]]+)\]\(([^)]+)\)/g;
-    let match;
-
-    while ((match = formatRegex.exec(content)) !== null) {
-      // Add text before the match
-      if (match.index > currentIndex) {
-        parts.push(content.substring(currentIndex, match.index));
-      }
-
-      if (match[1]) {
-        // Bold: **text**
-        parts.push(<strong key={match.index}>{match[2]}</strong>);
-      } else if (match[3]) {
-        // Italic: *text*
-        parts.push(<em key={match.index}>{match[4]}</em>);
-      } else if (match[5] && match[6]) {
-        // Link: [text](url)
-        const linkText = match[5];
-        const linkUrl = match[6];
-        
-        if (linkUrl.startsWith('#modal:')) {
-          // Modal link
-          const modalId = linkUrl.substring(7);
-          parts.push(
-            <button
-              key={match.index}
-              onClick={() => setModalContent({ 
-                title: linkText, 
-                content: getModalContent(modalId) 
-              })}
-              className="content-link content-modal-link"
-            >
-              {linkText}
-            </button>
-          );
-        } else {
-          // Regular link
-          parts.push(
-            <a 
-              key={match.index} 
-              href={linkUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="content-link"
-            >
-              {linkText}
-            </a>
-          );
-        }
-      }
-
-      currentIndex = match.index + match[0].length;
-    }
-
-    // Add remaining text
-    if (currentIndex < content.length) {
-      parts.push(content.substring(currentIndex));
-    }
-
-    return parts.length > 0 ? parts : content;
+    return (
+      <MarkdownRenderer 
+        content={content} 
+        onModalClick={handleModalClick} 
+      />
+    );
   };
 
   // Track if user has made changes (not just loaded from API)

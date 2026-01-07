@@ -10,6 +10,7 @@ export interface Chapter {
   content?: string;
   audio_url?: string;
   order_index: number;
+  content_modals?: Record<string, { title: string; content: string }>;
   created_at?: Timestamp;
   updated_at?: Timestamp;
 }
@@ -29,6 +30,7 @@ export interface ChapterPage {
   page_number: number;
   content: string;
   order_index: number;
+  content_modals?: Record<string, { title: string; content: string }>;
   created_at?: Timestamp;
   updated_at?: Timestamp;
 }
@@ -40,6 +42,7 @@ interface ApiChapterPage {
   pageNumber: number;
   content: string;
   orderIndex: number;
+  contentModals?: Record<string, { title: string; content: string }>;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -94,6 +97,7 @@ interface ApiChapter {
   content?: string;
   audioUrl?: string;
   orderIndex: number;
+  contentModals?: Record<string, { title: string; content: string }>;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -106,6 +110,7 @@ function mapChapter(c: ApiChapter): Chapter {
     content: c.content,
     audio_url: c.audioUrl,
     order_index: c.orderIndex,
+    content_modals: c.contentModals,
     created_at: c.createdAt,
     updated_at: c.updatedAt
   };
@@ -216,6 +221,7 @@ export class AdminService {
       page_number: page.pageNumber,
       content: page.content,
       order_index: page.orderIndex,
+      content_modals: page.contentModals,
       created_at: page.createdAt,
       updated_at: page.updatedAt
     }));

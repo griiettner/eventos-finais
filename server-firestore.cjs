@@ -379,6 +379,7 @@ app.post('/api/chapters', authMiddleware, adminMiddleware, async (req, res) => {
     const content = req.body.content;
     const audioUrl = req.body.audioUrl || req.body.audio_url || '';
     const orderIndex = req.body.orderIndex || req.body.order_index || 0;
+    const contentModals = req.body.contentModals || req.body.content_modals || {};
     
     const docRef = await db.collection('chapters').add({
       title,
@@ -557,6 +558,7 @@ app.post('/api/chapters/:chapterId/pages', authMiddleware, adminMiddleware, asyn
     const pageNumber = req.body.pageNumber || req.body.page_number || 1;
     const content = req.body.content || '';
     const orderIndex = req.body.orderIndex || req.body.order_index || 0;
+    const contentModals = req.body.contentModals || req.body.content_modals || {};
     
     const docRef = await db.collection('chapterPages').add({
       chapterId: req.params.chapterId,
@@ -564,6 +566,7 @@ app.post('/api/chapters/:chapterId/pages', authMiddleware, adminMiddleware, asyn
       pageNumber,
       content,
       orderIndex,
+      contentModals,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });

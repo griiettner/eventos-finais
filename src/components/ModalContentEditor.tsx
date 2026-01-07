@@ -1,55 +1,23 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Save, Type } from 'lucide-react';
+import RichTextEditor from './RichTextEditor';
 
 interface ModalContentEditorProps {
+  initialTitle?: string;
+  initialContent?: string;
   onSave: (title: string, content: string) => void;
   onClose: () => void;
 }
 
-const ModalContentEditor: React.FC<ModalContentEditorProps> = ({ onSave, onClose }) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-
-  const insertFormatting = (format: 'bold' | 'italic' | 'header') => {
-    if (!textareaRef.current) return;
-
-    const start = textareaRef.current.selectionStart;
-    const end = textareaRef.current.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const beforeText = content.substring(0, start);
-    const afterText = content.substring(end);
-
-    let newText = '';
-    let cursorOffset = 0;
-
-    switch (format) {
-      case 'bold':
-        newText = `**${selectedText || 'texto em negrito'}**`;
-        cursorOffset = selectedText ? newText.length : 2;
-        break;
-      case 'italic':
-        newText = `*${selectedText || 'texto em itálico'}*`;
-        cursorOffset = selectedText ? newText.length : 1;
-        break;
-      case 'header':
-        newText = `##${selectedText || 'cabeçalho'}##`;
-        cursorOffset = selectedText ? newText.length : 2;
-        break;
-    }
-
-    const fullText = beforeText + newText + afterText;
-    setContent(fullText);
-
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-        const newCursorPos = start + cursorOffset;
-        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-      }
-    }, 0);
-  };
+const ModalContentEditor: React.FC<ModalContentEditorProps> = ({ 
+  initialTitle = '', 
+  initialContent = '', 
+  onSave, 
+  onClose
+}) => {
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -83,7 +51,7 @@ const ModalContentEditor: React.FC<ModalContentEditorProps> = ({ onSave, onClose
         <div className="modal-header">
           <div className="modal-title-group">
             <Type className="text-accent" />
-            <h3>Criar Conteúdo do Modal</h3>
+            <h3>Conteúdo do Modal</h3>
           </div>
           <button onClick={onClose} className="close-modal-btn">
             <X size={20} />
@@ -105,43 +73,11 @@ const ModalContentEditor: React.FC<ModalContentEditorProps> = ({ onSave, onClose
 
             <div className="form-field">
               <label>Conteúdo</label>
-              <div className="rich-text-toolbar">
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('bold')}
-                  className="toolbar-btn"
-                  title="Negrito"
-                >
-                  <strong>B</strong>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('italic')}
-                  className="toolbar-btn"
-                  title="Itálico"
-                >
-                  <em>I</em>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('header')}
-                  className="toolbar-btn"
-                  title="Cabeçalho (maior, negrito, centralizado)"
-                >
-                  <strong>H</strong>
-                </button>
-              </div>
-              <textarea 
-                ref={textareaRef}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="content-textarea"
+              <RichTextEditor
+                content={content}
+                onChange={setContent}
                 placeholder="Digite o conteúdo que aparecerá no modal..."
               />
-              <small className="field-hint">
-                Use os botões para formatar: **negrito**, *itálico*, ##cabeçalho##
-              </small>
             </div>
           </div>
         </div>
@@ -151,7 +87,7 @@ const ModalContentEditor: React.FC<ModalContentEditorProps> = ({ onSave, onClose
             Cancelar
           </button>
           <button onClick={handleSave} className="btn-primary">
-            <Save size={16} /> Inserir Modal
+            <Save size={16} /> Salvar Modal
           </button>
         </div>
       </motion.div>
