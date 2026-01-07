@@ -115,9 +115,38 @@ const ChapterDetail: React.FC = () => {
     loadData();
   }, [id, authLoading]);
 
-useEffect(() => {
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPageIndex]);
+
+  // Swipe handlers
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      goToNextPage();
+    } else if (isRightSwipe) {
+      goToPreviousPage();
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   const sortedPages = useMemo(() => {
     return [...pages].sort((a, b) => {
@@ -344,6 +373,9 @@ useEffect(() => {
               exit={{ opacity: 0, x: -20 }}
               className='reading-content'
               style={{ fontSize: `${fontSize}px` }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               {currentPage?.subtitle && (
                 <h3 className='page-subtitle'>{currentPage.subtitle}</h3>
