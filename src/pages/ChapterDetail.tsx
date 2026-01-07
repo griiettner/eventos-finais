@@ -229,14 +229,24 @@ const ChapterDetail: React.FC = () => {
 
   const getModalContent = useCallback((modalId: string): string => {
     // Check if it's a reference ID in the current page's content_modals
-    const currentPageModals = pages[currentPageIndex]?.content_modals;
+    // Use sortedPages instead of pages to ensure we're looking at the correctly indexed page
+    const currentPage = sortedPages[currentPageIndex];
+    const currentPageModals = currentPage?.content_modals;
+    
     if (currentPageModals && currentPageModals[modalId]) {
       return currentPageModals[modalId].content;
     }
     
-    console.warn('Modal content ID reference not found on current page:', modalId);
+    // Fallback: search across all pages in this chapter if not found on current page
+    for (const page of pages) {
+      if (page.content_modals && page.content_modals[modalId]) {
+        return page.content_modals[modalId].content;
+      }
+    }
+    
+    console.warn('Modal content ID reference not found on any page:', modalId);
     return 'Conteúdo não encontrado.';
-  }, [pages, currentPageIndex]);
+  }, [sortedPages, pages, currentPageIndex]);
 
   const handleModalClick = useCallback((title: string, modalId: string) => {
     const content = getModalContent(modalId);

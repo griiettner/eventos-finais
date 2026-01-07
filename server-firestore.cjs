@@ -158,7 +158,7 @@ app.get('/', (req, res, next) => {
     const cacheClearScript = `
       <script>
         (function() {
-          const CACHE_VERSION = '20260106-force';
+          const CACHE_VERSION = '20260107-v1';
           if (localStorage.getItem('app_cache_force_clear') !== CACHE_VERSION) {
             console.log('Server-side triggered cache clear...');
             if ('serviceWorker' in navigator) {
