@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Type, Moon, Sun, Book, Save, CheckCircle2, X, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { AdminService, type ChapterPage, type Chapter } from '../services/admin-service';
@@ -9,7 +9,6 @@ import { useAuth } from '../hooks/useAuth';
 const ChapterDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { loading: authLoading } = useAuth();
   
   const [chapter, setChapter] = useState<Chapter | null>(null);
@@ -39,13 +38,17 @@ const ChapterDetail: React.FC = () => {
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   // Build full URL for audio (path is stored relative in DB)
   const getAudioUrl = (path: string | undefined) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-    return `${apiUrl}${path}`;
+    // Use window.location.origin for same-origin requests (fixes Android CORS issues)
+    const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    const fullUrl = `${apiUrl}${path}`;
+    console.log('Audio URL:', fullUrl);
+    return fullUrl;
   };
 
   // Format time in MM:SS
@@ -455,15 +458,26 @@ useEffect(() => {
               <div className='player-controls'>
                 <button 
                   onClick={async () => {
-                    if (audioRef.current) {
-                      if (isPlaying) {
-                        audioRef.current.pause();
-                      } else {
-                        try {
-                          await audioRef.current.play();
-                        } catch (error) {
-                          console.error('Audio play failed:', error);
+                    if (!audioRef.current) {
+                      alert('Erro: Elemento de áudio não encontrado');
+                      return;
+                    }
+                    
+                    if (isPlaying) {
+                      audioRef.current.pause();
+                    } else {
+                      try {
+                        // Android requires load() before play() in some cases
+                        if (audioRef.current.readyState < 2) {
+                          audioRef.current.load();
                         }
+                        await audioRef.current.play();
+                      } catch (error: unknown) {
+                        const err = error as Error;
+                        console.error('Audio play failed:', error);
+                        const errorMsg = `Erro ao reproduzir áudio:\n${err.name}: ${err.message}\nreadyState: ${audioRef.current?.readyState}\nnetworkState: ${audioRef.current?.networkState}\nsrc: ${audioRef.current?.src}`;
+                        alert(errorMsg);
+                        setAudioError('Não foi possível reproduzir o áudio.');
                       }
                     }
                   }} 
@@ -471,6 +485,7 @@ useEffect(() => {
                 >
                   {isPlaying ? <Pause size={24} /> : <Play size={24} />}
                 </button>
+                {audioError && <span className="audio-error-msg">{audioError}</span>}
                 
                 <div className='progress-container'>
                   <span className='time-display'>
@@ -548,7 +563,7 @@ useEffect(() => {
               <audio
                 ref={audioRef}
                 src={getAudioUrl(chapter.audio_url)}
-                preload="auto"
+                preload="metadata"
                 playsInline
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
@@ -561,30 +576,25 @@ useEffect(() => {
                   if (audioRef.current) {
                     setDuration(audioRef.current.duration);
                     audioRef.current.volume = volume;
-                    if (searchParams.get('autoPlay') === 'true') {
-                      audioRef.current.play().catch(err => {
-                        console.warn('Autoplay blocked:', err);
-                      });
-                    }
                   }
                 }}
                 onEnded={handleAudioEnded}
                 onError={(e) => {
                   const audio = e.currentTarget;
                   const error = audio.error;
-                  console.error('Audio error:', {
+                  const errorInfo = {
                     code: error?.code,
                     message: error?.message,
                     src: audio.src,
                     networkState: audio.networkState,
                     readyState: audio.readyState
-                  });
+                  };
+                  console.error('Audio error:', errorInfo);
+                  alert(`Erro ao carregar áudio:\nCode: ${error?.code}\nMsg: ${error?.message}\nSrc: ${audio.src}\nNetwork: ${audio.networkState}`);
+                  setAudioError('Erro ao carregar áudio.');
                 }}
                 onCanPlay={() => {
-                  console.log('Audio can play');
-                }}
-                onLoadStart={() => {
-                  console.log('Audio load started:', getAudioUrl(chapter.audio_url));
+                  setAudioError(null);
                 }}
               />
               {isAudioFinished && (
