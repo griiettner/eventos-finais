@@ -137,6 +137,53 @@ const upload = multer({
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+// Force cache invalidation for critical PWA files
+app.use((req, res, next) => {
+  const criticalFiles = ['/index.html', '/version.json', '/registerSW.js', '/manifest.webmanifest', '/sw.js'];
+  if (criticalFiles.some(file => req.url.includes(file)) || req.url.endsWith('.js')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    res.setHeader('Service-Worker-Allowed', '/');
+  }
+  next();
+});
+
+// Middleware to inject cache clearing script into index.html
+app.get('/', (req, res, next) => {
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    let content = fs.readFileSync(indexPath, 'utf8');
+    const cacheClearScript = `
+      <script>
+        (function() {
+          const CACHE_VERSION = '20260106-force';
+          if (localStorage.getItem('app_cache_force_clear') !== CACHE_VERSION) {
+            console.log('Server-side triggered cache clear...');
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(regs => {
+                for (let reg of regs) reg.unregister();
+              });
+            }
+            if ('caches' in window) {
+              caches.keys().then(names => {
+                for (let name of names) caches.delete(name);
+              });
+            }
+            localStorage.clear();
+            localStorage.setItem('app_cache_force_clear', CACHE_VERSION);
+            window.location.reload(true);
+          }
+        })();
+      </script>
+    `;
+    content = content.replace('<head>', '<head>' + cacheClearScript);
+    return res.send(content);
+  }
+  next();
+});
+
 // Handle OPTIONS preflight for audio files (iOS Safari compatibility)
 app.options('/uploads/audio/:filename', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

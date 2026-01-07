@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Shield, ChevronDown, Edit, UserIcon, HelpCircle, Menu } from 'lucide-react';
+import { LogOut, Shield, ChevronDown, Edit, UserIcon, HelpCircle, Menu, RotateCw, RefreshCw } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,7 @@ interface UserMenuProps {
 const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -36,10 +37,40 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
     setIsOpen(false);
   };
 
+  const handleForceUpdate = async () => {
+    setIsCheckingUpdate(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+
+      localStorage.removeItem('app_version');
+      window.location.href = window.location.origin + '/?t=' + Date.now();
+    } catch (error) {
+      console.error('Manual update failed:', error);
+      window.location.reload();
+    }
+  };
+
   if (!user) return null;
 
   return (
-    <div className='relative'>
+    <div className='relative flex items-center gap-2'>
+      <button 
+        onClick={() => window.location.reload()} 
+        className="refresh-btn-header"
+        title="Recarregar"
+      >
+        <RefreshCw size={20} />
+      </button>
       <div className='user-info' onClick={() => setIsOpen(!isOpen)} role='button'>
         <div className='avatar'>
           <Menu size={20} />
@@ -119,6 +150,16 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
               >
                 <HelpCircle size={16} />
                 Como usar o App
+              </button>
+
+              {/* Force Update Button */}
+              <button
+                onClick={handleForceUpdate}
+                disabled={isCheckingUpdate}
+                className='menu-item'
+              >
+                <RotateCw size={16} className={isCheckingUpdate ? 'spin' : ''} />
+                {isCheckingUpdate ? 'Verificando...' : 'Verificar Atualização'}
               </button>
 
               {/* Admin Link for admin users */}

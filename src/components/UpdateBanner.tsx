@@ -19,12 +19,21 @@ const UpdateBanner: React.FC = () => {
       localStorage.setItem('app_version', versionInfo.version);
     }
     
+    // Clear ALL caches and unregister SW for a clean slate
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
+      navigator.serviceWorker.getRegistrations().then(async registrations => {
         for (const registration of registrations) {
-          registration.unregister();
+          await registration.unregister();
         }
-        window.location.reload();
+        
+        // Clear all caches
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+        }
+        
+        // Hard reload
+        window.location.href = window.location.origin + '/?t=' + Date.now();
       });
     } else {
       window.location.reload();
