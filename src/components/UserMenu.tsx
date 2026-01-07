@@ -64,22 +64,20 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
 
   return (
     <div className='relative flex items-center gap-2'>
-      <button 
-        onClick={() => window.location.reload()} 
-        className="refresh-btn-header"
-        title="Recarregar"
-      >
-        <RefreshCw size={20} />
-      </button>
       <div className='user-info' onClick={() => setIsOpen(!isOpen)} role='button'>
         <div className='avatar'>
           <Menu size={20} />
         </div>
         <div>
-          <h3>Olá, {user?.username} {user.isAdmin ? '(Admin)' : ''}</h3>
+          <h3>
+            Olá, {user?.username} {user.isAdmin ? '(Admin)' : ''}
+          </h3>
           <p>Menu de usuário</p>
         </div>
         <ChevronDown size={14} className={`chevron ${isOpen ? 'open' : ''}`} />
+        <button onClick={() => window.location.reload()} className='refresh-btn-header' title='Recarregar'>
+          <RefreshCw size={20} />
+        </button>
       </div>
 
       {/* Dropdown Menu */}
@@ -153,11 +151,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
               </button>
 
               {/* Force Update Button */}
-              <button
-                onClick={handleForceUpdate}
-                disabled={isCheckingUpdate}
-                className='menu-item'
-              >
+              <button onClick={handleForceUpdate} disabled={isCheckingUpdate} className='menu-item'>
                 <RotateCw size={16} className={isCheckingUpdate ? 'spin' : ''} />
                 {isCheckingUpdate ? 'Verificando...' : 'Verificar Atualização'}
               </button>
