@@ -38,17 +38,13 @@ const ChapterDetail: React.FC = () => {
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [audioError, setAudioError] = useState<string | null>(null);
 
   // Build full URL for audio (path is stored relative in DB)
   const getAudioUrl = (path: string | undefined) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    // Use window.location.origin for same-origin requests (fixes Android CORS issues)
-    const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
-    const fullUrl = `${apiUrl}${path}`;
-    console.log('Audio URL:', fullUrl);
-    return fullUrl;
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    return `${apiUrl}${path}`;
   };
 
   // Format time in MM:SS
@@ -458,26 +454,24 @@ useEffect(() => {
               <div className='player-controls'>
                 <button 
                   onClick={async () => {
-                    if (!audioRef.current) {
-                      alert('Erro: Elemento de áudio não encontrado');
-                      return;
-                    }
-                    
-                    if (isPlaying) {
-                      audioRef.current.pause();
-                    } else {
-                      try {
-                        // Android requires load() before play() in some cases
-                        if (audioRef.current.readyState < 2) {
-                          audioRef.current.load();
+                    const isAndroid = /android/i.test(navigator.userAgent);
+                    if (audioRef.current) {
+                      if (isPlaying) {
+                        audioRef.current.pause();
+                      } else {
+                        try {
+                          // Debug for Android
+                          if (isAndroid) {
+                            alert(`Play attempt (Android Debug):\nURL: ${audioRef.current.src}\nreadyState: ${audioRef.current.readyState}\nnetworkState: ${audioRef.current.networkState}`);
+                          }
+                          await audioRef.current.play();
+                        } catch (error: unknown) {
+                          const err = error as Error;
+                          console.error('Audio play failed:', error);
+                          if (isAndroid) {
+                            alert(`Play Error (Android Debug):\n${err.name}: ${err.message}`);
+                          }
                         }
-                        await audioRef.current.play();
-                      } catch (error: unknown) {
-                        const err = error as Error;
-                        console.error('Audio play failed:', error);
-                        const errorMsg = `Erro ao reproduzir áudio:\n${err.name}: ${err.message}\nreadyState: ${audioRef.current?.readyState}\nnetworkState: ${audioRef.current?.networkState}\nsrc: ${audioRef.current?.src}`;
-                        alert(errorMsg);
-                        setAudioError('Não foi possível reproduzir o áudio.');
                       }
                     }
                   }} 
@@ -485,7 +479,6 @@ useEffect(() => {
                 >
                   {isPlaying ? <Pause size={24} /> : <Play size={24} />}
                 </button>
-                {audioError && <span className="audio-error-msg">{audioError}</span>}
                 
                 <div className='progress-container'>
                   <span className='time-display'>
@@ -582,19 +575,18 @@ useEffect(() => {
                 onError={(e) => {
                   const audio = e.currentTarget;
                   const error = audio.error;
-                  const errorInfo = {
+                  console.error('Audio error:', {
                     code: error?.code,
                     message: error?.message,
                     src: audio.src,
                     networkState: audio.networkState,
                     readyState: audio.readyState
-                  };
-                  console.error('Audio error:', errorInfo);
-                  alert(`Erro ao carregar áudio:\nCode: ${error?.code}\nMsg: ${error?.message}\nSrc: ${audio.src}\nNetwork: ${audio.networkState}`);
-                  setAudioError('Erro ao carregar áudio.');
-                }}
-                onCanPlay={() => {
-                  setAudioError(null);
+                  });
+                  // Debug alert for Android only
+                  const isAndroid = /android/i.test(navigator.userAgent);
+                  if (isAndroid) {
+                    alert(`Audio Error (Android Debug):\nCode: ${error?.code}\nMsg: ${error?.message}\nURL: ${audio.src}`);
+                  }
                 }}
               />
               {isAudioFinished && (

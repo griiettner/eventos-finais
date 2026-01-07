@@ -197,6 +197,12 @@ app.options('/uploads/audio/:filename', (req, res) => {
 app.get('/uploads/audio/:filename', (req, res) => {
   const filePath = path.join(UPLOADS_DIR, req.params.filename);
   
+  console.log('Audio request received:', { 
+    filename: req.params.filename, 
+    filePath,
+    userAgent: req.headers['user-agent']
+  });
+  
   // Set CORS headers for audio streaming (iOS Safari and Android Chrome compatibility)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
@@ -225,7 +231,7 @@ app.get('/uploads/audio/:filename', (req, res) => {
   };
   const contentType = mimeTypes[ext] || 'audio/mpeg';
   
-  console.log('Audio request:', { filename: req.params.filename, range, fileSize, contentType });
+  console.log('Audio serving:', { filename: req.params.filename, range, fileSize, contentType, ext });
   
   if (range) {
     // Handle Range Request (required for iOS Safari and Android audio playback)
