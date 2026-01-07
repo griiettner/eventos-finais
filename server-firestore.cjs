@@ -193,17 +193,19 @@ app.options('/uploads/audio/:filename', (req, res) => {
   res.sendStatus(204);
 });
 
-// Serve uploaded audio files with Range Request support (required for iOS Safari)
+// Serve uploaded audio files with Range Request support (required for iOS/Android)
 app.get('/uploads/audio/:filename', (req, res) => {
   const filePath = path.join(UPLOADS_DIR, req.params.filename);
   
-  // Set CORS headers for audio streaming (iOS Safari compatibility)
+  // Set CORS headers for audio streaming (iOS Safari and Android Chrome compatibility)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Range');
-  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+  res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length, Content-Type');
+  res.setHeader('Access-Control-Allow-Credentials', 'false');
   
   if (!fs.existsSync(filePath)) {
+    console.error('Audio file not found:', filePath);
     return res.status(404).json({ error: 'Audio file not found' });
   }
   
@@ -223,8 +225,10 @@ app.get('/uploads/audio/:filename', (req, res) => {
   };
   const contentType = mimeTypes[ext] || 'audio/mpeg';
   
+  console.log('Audio request:', { filename: req.params.filename, range, fileSize, contentType });
+  
   if (range) {
-    // Handle Range Request (required for iOS Safari audio playback)
+    // Handle Range Request (required for iOS Safari and Android audio playback)
     const parts = range.replace(/bytes=/, '').split('-');
     const start = parseInt(parts[0], 10);
     const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
@@ -237,7 +241,8 @@ app.get('/uploads/audio/:filename', (req, res) => {
       'Accept-Ranges': 'bytes',
       'Content-Length': chunkSize,
       'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=31536000'
+      'Cache-Control': 'public, max-age=31536000',
+      'Access-Control-Allow-Origin': '*'
     });
     
     file.pipe(res);
@@ -247,7 +252,8 @@ app.get('/uploads/audio/:filename', (req, res) => {
       'Content-Length': fileSize,
       'Content-Type': contentType,
       'Accept-Ranges': 'bytes',
-      'Cache-Control': 'public, max-age=31536000'
+      'Cache-Control': 'public, max-age=31536000',
+      'Access-Control-Allow-Origin': '*'
     });
     
     fs.createReadStream(filePath).pipe(res);

@@ -548,7 +548,7 @@ useEffect(() => {
               <audio
                 ref={audioRef}
                 src={getAudioUrl(chapter.audio_url)}
-                preload="metadata"
+                preload="auto"
                 playsInline
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
@@ -569,6 +569,23 @@ useEffect(() => {
                   }
                 }}
                 onEnded={handleAudioEnded}
+                onError={(e) => {
+                  const audio = e.currentTarget;
+                  const error = audio.error;
+                  console.error('Audio error:', {
+                    code: error?.code,
+                    message: error?.message,
+                    src: audio.src,
+                    networkState: audio.networkState,
+                    readyState: audio.readyState
+                  });
+                }}
+                onCanPlay={() => {
+                  console.log('Audio can play');
+                }}
+                onLoadStart={() => {
+                  console.log('Audio load started:', getAudioUrl(chapter.audio_url));
+                }}
               />
               {isAudioFinished && (
                 <div className="audio-finished-badge">
