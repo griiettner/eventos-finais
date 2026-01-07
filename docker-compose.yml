@@ -44,4 +44,9 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+    volumes:
+      - uploads_data:/app/uploads
     restart: unless-stopped
+
+volumes:
+  uploads_data:

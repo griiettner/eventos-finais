@@ -85,6 +85,9 @@ RUN npm ci --omit=dev
 # Copy server file
 COPY server-firestore.cjs ./
 
+# Create uploads directory for persistent storage
+RUN mkdir -p /app/uploads/audio
+
 # Expose port
 EXPOSE 3001
 
