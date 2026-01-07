@@ -2141,6 +2141,22 @@ button {
     padding: 3vh 2rem;
     height: 12vh;
   }
+
+  .study-questions {
+    margin: 0 -1.5rem;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    border-radius: 0;
+  }
+
+  .chapter-detail-layout {
+    padding-bottom: 0;
+  }
+
+  .question-item textarea {
+    min-height: 11rem;
+  }
 }
 
 /* Pages Management Section */
