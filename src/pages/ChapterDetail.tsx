@@ -26,6 +26,7 @@ const ChapterDetail: React.FC = () => {
   const [theme, setTheme] = useState<'dark' | 'sepia' | 'light'>('dark');
   const [fontSize, setFontSize] = useState(18);
   const [isLoading, setIsLoading] = useState(true);
+  const [isHeaderSticky, setIsHeaderSticky] = useState(false);
 
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [pages, setPages] = useState<ChapterPage[]>([]);
@@ -116,6 +117,16 @@ const ChapterDetail: React.FC = () => {
   }, [id, authLoading]);
 
   useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      setIsHeaderSticky(scrollY > 40);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPageIndex]);
 
@@ -159,31 +170,60 @@ const ChapterDetail: React.FC = () => {
 
   const currentPage = sortedPages[currentPageIndex];
 
-  const handleMarkPageAsRead = async () => {
+  const handleTogglePageRead = async () => {
     if (!chapter || !currentPage || !id) return;
     
+    const isCurrentlyRead = readPages.has(currentPage.id);
+    const currentPageId = currentPage.id;
+    
     try {
-      await AdminService.markPageAsRead(id, currentPage.id);
-      setReadPages(prev => new Set([...prev, currentPage.id]));
-      
-      // Se houver mais páginas não lidas, o índice 0 passará a ser a próxima não lida
-      // devido ao useMemo que reordena as páginas. Por isso, resetamos para 0
-      // se a página atual acabou de ser marcada como lida e movida para o fim.
-      setCurrentPageIndex(0);
+      if (isCurrentlyRead) {
+        await AdminService.markPageAsUnread(id, currentPageId);
+        setReadPages(prev => {
+          const next = new Set(prev);
+          next.delete(currentPageId);
+          return next;
+        });
+
+        // Ao desmarcar como lida, a página volta para a seção de "não lidas" (topo).
+        // Precisamos encontrar o novo índice dela na lista reordenada para manter o usuário nela.
+        // O useMemo sortedPages será recalculado após o setReadPages.
+        // Como o sortedPages depende do order_index e readPages, a página desmarcada
+        // irá para sua posição original baseada no order_index entre as não lidas.
+        
+        // Encontramos onde ela ficará:
+        const unreadPagesBefore = pages.filter(p => p.id !== currentPageId && !readPages.has(p.id));
+        const newIndex = unreadPagesBefore.filter(p => p.order_index < currentPage.order_index).length;
+        
+        setCurrentPageIndex(newIndex);
+      } else {
+        await AdminService.markPageAsRead(id, currentPageId);
+        setReadPages(prev => new Set([...prev, currentPageId]));
+        // Quando marca como lida, o comportamento padrão permanece voltar para o início (próxima não lida)
+        setCurrentPageIndex(0);
+      }
     } catch (error) {
-      console.error('Failed to mark page as read:', error);
+      console.error('Failed to toggle page read status:', error);
     }
   };
 
   const goToNextPage = () => {
+    if (sortedPages.length === 0) return;
     if (currentPageIndex < sortedPages.length - 1) {
       setCurrentPageIndex(currentPageIndex + 1);
+    } else {
+      // Loop to the first page
+      setCurrentPageIndex(0);
     }
   };
 
   const goToPreviousPage = () => {
+    if (sortedPages.length === 0) return;
     if (currentPageIndex > 0) {
       setCurrentPageIndex(currentPageIndex - 1);
+    } else {
+      // Loop to the last page
+      setCurrentPageIndex(sortedPages.length - 1);
     }
   };
 
@@ -314,7 +354,7 @@ const ChapterDetail: React.FC = () => {
 
   return (
     <div className={`chapter-detail-layout theme-${theme}`}>
-      <header className='glass detail-header'>
+      <header className={`glass detail-header ${isHeaderSticky ? 'sticky-active' : ''}`}>
         <div className="back-and-status">
           <button onClick={() => navigate('/dashboard')} className='back-btn'>
             <ChevronLeft size={24} />
@@ -355,6 +395,10 @@ const ChapterDetail: React.FC = () => {
             <Type size={20} />
           </button>
         </div>
+        
+        <div className={`sticky-page-indicator ${isHeaderSticky ? 'visible' : ''}`}>
+          Página {currentPage?.page_number || currentPageIndex + 1} de {totalPagesInChapter}
+        </div>
       </header>
 
       <main className='reading-container'>
@@ -391,11 +435,11 @@ const ChapterDetail: React.FC = () => {
 
               <div className='page-read-marker'>
                 {readPages.has(currentPage?.id || '') ? (
-                  <span className='read-badge'>
-                    <CheckCircle2 size={16} /> Página lida
-                  </span>
+                  <button onClick={handleTogglePageRead} className='read-badge btn-unread'>
+                    <CheckCircle2 size={16} /> Página lida (Desmarcar)
+                  </button>
                 ) : (
-                  <button onClick={handleMarkPageAsRead} className='btn-mark-read'>
+                  <button onClick={handleTogglePageRead} className='btn-mark-read'>
                     <CheckCircle2 size={16} /> Marcar como lida
                   </button>
                 )}
@@ -405,7 +449,6 @@ const ChapterDetail: React.FC = () => {
             <div className='page-navigation'>
               <button 
                 onClick={goToPreviousPage} 
-                disabled={currentPageIndex === 0}
                 className='btn-nav btn-prev'
               >
                 <ChevronLeft size={20} /> Anterior
@@ -424,7 +467,6 @@ const ChapterDetail: React.FC = () => {
 
               <button 
                 onClick={goToNextPage} 
-                disabled={currentPageIndex === pages.length - 1}
                 className='btn-nav btn-next'
               >
                 Próxima <ChevronRight size={20} />

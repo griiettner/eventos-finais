@@ -250,11 +250,19 @@ export class AdminService {
   }
 
   // Page read progress handling
-  static async markPageAsRead(chapterId: string, pageId: string): Promise<void> {
+  static async setPageReadStatus(chapterId: string, pageId: string, isRead: boolean): Promise<void> {
     await apiCall('/api/progress/page', {
       method: 'POST',
-      body: JSON.stringify({ chapterId, pageId, isRead: true })
+      body: JSON.stringify({ chapterId, pageId, isRead })
     });
+  }
+
+  static async markPageAsRead(chapterId: string, pageId: string): Promise<void> {
+    return this.setPageReadStatus(chapterId, pageId, true);
+  }
+
+  static async markPageAsUnread(chapterId: string, pageId: string): Promise<void> {
+    return this.setPageReadStatus(chapterId, pageId, false);
   }
 
   static async getPageReadProgress(chapterId: string): Promise<{ page_id: string; is_read: boolean }[]> {

@@ -905,6 +905,57 @@ button {
   padding: 0 1rem;
   justify-content: space-between;
   z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.detail-header.sticky-active {
+  height: 70px;
+  background: rgba(10, 10, 10, 0.95);
+  border-bottom-color: transparent;
+}
+
+.theme-sepia .detail-header.sticky-active {
+  background: rgba(244, 236, 216, 0.95);
+}
+
+.theme-light .detail-header.sticky-active {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.sticky-page-indicator {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: rgba(30, 30, 30, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-align: center;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.sticky-page-indicator.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.theme-sepia .sticky-page-indicator {
+  background: rgba(220, 210, 180, 0.9);
+  color: #433422;
+}
+
+.theme-light .sticky-page-indicator {
+  background: rgba(245, 245, 245, 0.9);
+  color: #222;
 }
 
 .header-title { 
@@ -2455,6 +2506,17 @@ button {
   font-weight: 500;
 }
 
+.btn-unread {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-unread:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+  transform: translateY(-1px);
+}
+
 .btn-mark-read {
   display: inline-flex;
   align-items: center;
@@ -2511,20 +2573,39 @@ button {
 }
 
 .btn-nav {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1.2rem;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 120px;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.7rem 1.2rem !important;
+  background-color: var(--accent) !important;
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  min-width: 140px !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 10 !important;
+}
+
+/* Specific fix for themes trying to override button styles */
+.theme-dark .btn-nav,
+.theme-sepia .btn-nav,
+.theme-light .btn-nav,
+.chapter-detail-layout .btn-nav {
+  background-color: var(--accent) !important;
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .btn-nav:hover:not(:disabled) {
@@ -2532,9 +2613,12 @@ button {
   transform: translateY(-1px);
 }
 
-.btn-nav:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.btn-nav:disabled,
+.btn-nav[disabled] {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  background-color: var(--accent) !important;
+  color: white !important;
 }
 
 .page-dots {
