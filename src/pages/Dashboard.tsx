@@ -74,8 +74,15 @@ const Dashboard: React.FC = () => {
     };
   }, [authLoading]);
 
-  const handleProfileUpdate = async () => {
-    return;
+  const handleProfileUpdate = async (userData: { username: string; email: string }) => {
+    try {
+      await AdminService.updateUserProfile(userData.username, userData.email);
+      // Removed window.location.reload() to prevent full app refresh.
+      // The UserMenu now calls refreshProfile() to update the state reatively.
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      alert('Erro ao atualizar perfil. Por favor, tente novamente.');
+    }
   };
 
   if (isLoading) {

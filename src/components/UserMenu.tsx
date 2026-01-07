@@ -13,7 +13,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [editUsername, setEditUsername] = useState('');
-  const { user, logout } = useAuth();
+  const { user, logout, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -22,13 +22,18 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
     }
   }, [user]);
 
-  const handleProfileUpdate = () => {
+  const handleProfileUpdate = async () => {
     if (user && editUsername.trim()) {
-      onProfileUpdate?.({
-        username: editUsername.trim(),
-        email: user.email
-      });
-      setIsEditingProfile(false);
+      try {
+        await onProfileUpdate?.({
+          username: editUsername.trim(),
+          email: user.email
+        });
+        await refreshProfile();
+        setIsEditingProfile(false);
+      } catch (error) {
+        console.error('Failed to update profile in UserMenu:', error);
+      }
     }
   };
 

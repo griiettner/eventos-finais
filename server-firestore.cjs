@@ -609,6 +609,68 @@ app.get('/api/progress', authMiddleware, async (req, res) => {
   }
 });
 
+// Update profile (authenticated users)
+app.put('/api/profile', authMiddleware, async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    const userId = req.user.id;
+    const userEmail = email || req.user.email || '';
+
+    console.log(`[API] Updating profile for user ${userId} to ${username} (Email: ${userEmail})`);
+
+    // Update username in user document
+    const userRef = db.collection('users').doc(userId);
+    
+    // Check if document exists first to avoid error on update
+    const userDoc = await userRef.get();
+    if (!userDoc.exists) {
+      console.log(`[API] User document ${userId} not found, creating it...`);
+      await userRef.set({
+        username: username.trim(),
+        email: userEmail,
+        isAdmin: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await userRef.update({
+        username: username.trim(),
+        email: userEmail, // Also update email if provided
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    res.json({ success: true, username: username.trim(), email: userEmail });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ error: `Failed to update profile: ${error.message}` });
+  }
+});
+
+// Get profile (authenticated users)
+app.get('/api/profile', authMiddleware, async (req, res) => {
+  try {
+    const userDoc = await db.collection('users').doc(req.user.id).get();
+    if (userDoc.exists) {
+      res.json(userDoc.data());
+    } else {
+      res.json({
+        username: req.user.givenName || req.user.email?.split('@')[0] || '',
+        email: req.user.email || '',
+        isAdmin: false
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
 // Update user progress (authenticated users - own data only)
 app.post('/api/progress', authMiddleware, async (req, res) => {
   try {

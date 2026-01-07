@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
 import { AuthContext } from './AuthContextCore';
 import type { AuthContextType } from './AuthContextCore';
-import { setAuthTokenGetter } from '../services/admin-service';
+import { setAuthTokenGetter, AdminService } from '../services/admin-service';
 import { setFirebaseAuthTokenGetter } from '../services/firebase-service';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user: kindeUser, isAuthenticated, isLoading, logout: kindeLogout, getClaim, getToken } = useKindeAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [profileData, setProfileData] = useState<{ username: string; email: string } | null>(null);
 
   // Set up token getter for API calls
   useEffect(() => {
@@ -19,19 +20,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setFirebaseAuthTokenGetter(tokenGetter);
   }, [getToken]);
 
+  const fetchProfile = useCallback(async () => {
+    if (isAuthenticated && kindeUser) {
+      try {
+        const profile = await AdminService.getUserProfile();
+        setProfileData({
+          username: profile.username,
+          email: profile.email
+        });
+      } catch (err) {
+        console.warn('[AuthContext] Could not fetch custom profile, using Kinde defaults', err);
+      }
+    }
+  }, [isAuthenticated, kindeUser]);
+
   useEffect(() => {
     const init = async () => {
       try {
         if (isAuthenticated && kindeUser) {
           // Check if user has admin role from Kinde token claims
-          // Requires "Roles (array)" to be enabled in Kinde > Settings > Applications > [App] > Tokens > Token Customization
           const rolesClaim = await getClaim('roles');
           
           let hasAdminRole = false;
           const rolesValue = rolesClaim?.value;
           
           if (Array.isArray(rolesValue)) {
-            // Roles can be either strings like ["admin"] or objects like [{key: "admin", name: "Admin"}]
             hasAdminRole = rolesValue.some((role: string | { key?: string; name?: string }) => {
               if (typeof role === 'string') {
                 return role === 'admin';
@@ -43,8 +56,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           setIsAdmin(hasAdminRole);
+          // Initial profile fetch
+          await fetchProfile();
         } else {
           setIsAdmin(false);
+          setProfileData(null);
         }
       } catch (err) {
         console.error('[AuthContext] Auth sync error:', err);
@@ -52,22 +68,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     init();
-  }, [isLoading, isAuthenticated, kindeUser, getClaim]);
+  }, [isLoading, isAuthenticated, kindeUser, getClaim, fetchProfile]);
 
   const logout = async () => {
     await kindeLogout();
   };
 
+  const refreshProfile = useCallback(async () => {
+    await fetchProfile();
+  }, [fetchProfile]);
+
   const contextValue: AuthContextType = {
     user: kindeUser
       ? {
-          username: kindeUser.givenName || kindeUser.familyName || kindeUser.email?.split('@')[0] || '',
-          email: kindeUser.email || '',
+          username: profileData?.username || kindeUser.givenName || kindeUser.familyName || kindeUser.email?.split('@')[0] || '',
+          email: profileData?.email || kindeUser.email || '',
           isAdmin,
         }
       : null,
     loading: isLoading,
     logout,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

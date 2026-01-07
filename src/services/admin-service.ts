@@ -324,4 +324,15 @@ export class AdminService {
       answer: a.answer
     }));
   }
+
+  static async updateUserProfile(username: string, email: string): Promise<void> {
+    await apiCall('/api/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ username, email })
+    });
+  }
+
+  static async getUserProfile(): Promise<{ username: string; email: string; isAdmin: boolean }> {
+    return apiCall('/api/profile');
+  }
 }
