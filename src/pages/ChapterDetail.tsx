@@ -49,7 +49,7 @@ const ChapterDetail: React.FC = () => {
 
   // Format time in MM:SS
   const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return '0:00';
+    if (isNaN(seconds) || !isFinite(seconds) || seconds < 0) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -454,23 +454,14 @@ useEffect(() => {
               <div className='player-controls'>
                 <button 
                   onClick={async () => {
-                    const isAndroid = /android/i.test(navigator.userAgent);
                     if (audioRef.current) {
                       if (isPlaying) {
                         audioRef.current.pause();
                       } else {
                         try {
-                          // Debug for Android
-                          if (isAndroid) {
-                            alert(`Play attempt (Android Debug):\nURL: ${audioRef.current.src}\nreadyState: ${audioRef.current.readyState}\nnetworkState: ${audioRef.current.networkState}`);
-                          }
                           await audioRef.current.play();
-                        } catch (error: unknown) {
-                          const err = error as Error;
+                        } catch (error) {
                           console.error('Audio play failed:', error);
-                          if (isAndroid) {
-                            alert(`Play Error (Android Debug):\n${err.name}: ${err.message}`);
-                          }
                         }
                       }
                     }
@@ -582,11 +573,6 @@ useEffect(() => {
                     networkState: audio.networkState,
                     readyState: audio.readyState
                   });
-                  // Debug alert for Android only
-                  const isAndroid = /android/i.test(navigator.userAgent);
-                  if (isAndroid) {
-                    alert(`Audio Error (Android Debug):\nCode: ${error?.code}\nMsg: ${error?.message}\nURL: ${audio.src}`);
-                  }
                 }}
               />
               {isAudioFinished && (
