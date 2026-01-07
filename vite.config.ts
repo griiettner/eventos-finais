@@ -9,9 +9,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.svg', 'logo.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,wasm}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true
