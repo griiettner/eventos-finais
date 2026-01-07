@@ -63,18 +63,20 @@ const UserMenu: React.FC<UserMenuProps> = ({ onProfileUpdate }) => {
   if (!user) return null;
 
   return (
-    <div className='relative flex items-center gap-2'>
-      <div className='user-info' onClick={() => setIsOpen(!isOpen)} role='button'>
-        <div className='avatar'>
-          <Menu size={20} />
+    <div className='header-user-group-container'>
+      <div className='header-user-top'>
+        <div className='user-info' onClick={() => setIsOpen(!isOpen)} role='button'>
+          <div className='avatar'>
+            <Menu size={20} />
+          </div>
+          <div>
+            <h3>
+              Olá, {user?.username} {user.isAdmin ? '(Admin)' : ''}
+            </h3>
+            <p>Menu de usuário</p>
+          </div>
+          <ChevronDown size={14} className={`chevron ${isOpen ? 'open' : ''}`} />
         </div>
-        <div>
-          <h3>
-            Olá, {user?.username} {user.isAdmin ? '(Admin)' : ''}
-          </h3>
-          <p>Menu de usuário</p>
-        </div>
-        <ChevronDown size={14} className={`chevron ${isOpen ? 'open' : ''}`} />
         <button onClick={() => window.location.reload()} className='refresh-btn-header' title='Recarregar'>
           <RefreshCw size={20} />
         </button>

@@ -1107,6 +1107,19 @@ button {
   width: 100%;
 }
 
+.header-user-group-container {
+  z-index: 1001;
+  position: relative;
+  width: 100%;
+}
+
+.header-user-top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
 .refresh-btn-header {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--glass-border);
@@ -1124,11 +1137,6 @@ button {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   border-color: var(--primary);
-}
-
-/* Ensure UserMenu is reachable */
-.header-user-group > :last-child {
-  z-index: 1001;
 }
 
 /* Ensure UserMenu has enough space and correct z-index */
