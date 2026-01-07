@@ -41,6 +41,9 @@ const UpdateBanner: React.FC = () => {
   }, [versionInfo]);
 
   const checkVersion = useCallback(async () => {
+    // We'll check the state inside the function but won't depend on them for memoization
+    // to avoid potential callback loops or stale closures if handled incorrectly.
+    // However, to satisfy the compiler and ensure safety, we'll check it here.
     try {
       const response = await fetch(`/version.json?t=${Date.now()}`, {
         cache: 'no-store',
@@ -75,29 +78,34 @@ const UpdateBanner: React.FC = () => {
   }, [handleUpdate]);
 
   useEffect(() => {
-    // Initial check
+    let isMounted = true;
+
     const runCheck = async () => {
+      if (!isMounted || showBanner || isUpdating) return;
       await checkVersion();
     };
+
+    // Initial check
     runCheck();
 
     // Check every 30 minutes
-    const interval = setInterval(checkVersion, 30 * 60 * 1000);
+    const interval = setInterval(runCheck, 30 * 60 * 1000);
     
     // Check when user returns to the tab
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        checkVersion();
+        runCheck();
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      isMounted = false;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [checkVersion]);
+  }, [checkVersion, showBanner, isUpdating]);
 
   if (!showBanner) return null;
 
