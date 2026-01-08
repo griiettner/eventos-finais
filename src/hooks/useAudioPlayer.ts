@@ -17,6 +17,8 @@ interface UseAudioPlayerReturn {
   playbackRate: number;
   togglePlay: () => void;
   setPlaybackRate: (rate: number) => void;
+  // For iOS: percentage (0-100) where audio will start, null if no pending position
+  pendingPositionPercent: number | null;
 }
 
 // Detect iOS devices
@@ -36,16 +38,29 @@ export function useAudioPlayer(options: UseAudioPlayerOptions): UseAudioPlayerRe
   const [currentTime, setCurrentTime] = useState(initialPosition); // Initialize with saved position
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRateState] = useState(1);
+  const [pendingSeekTime, setPendingSeekTime] = useState<number | null>(null);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState(audioUrl);
 
   // Store callbacks in refs to avoid effect dependencies
   const onPlayRef = useRef(onPlay);
   const onPauseRef = useRef(onPause);
   const onEndedRef = useRef(onEnded);
   const hasRestoredPositionRef = useRef(false);
-  const pendingSeekRef = useRef<number | null>(null);
+
+  // Reset state when audioUrl changes (during render phase)
+  if (currentAudioUrl !== audioUrl) {
+    setCurrentAudioUrl(audioUrl);
+    setPendingSeekTime(null);
+  }
 
   // Detect iOS once and memoize the result
   const iOS = useMemo(() => isIOS(), []);
+
+  // Calculate pending position percentage for visual indicator
+  const pendingPositionPercent = useMemo(() => {
+    if (!iOS || !pendingSeekTime || duration === 0) return null;
+    return (pendingSeekTime / duration) * 100;
+  }, [iOS, pendingSeekTime, duration]);
 
   // Keep refs updated
   useEffect(() => {
@@ -63,13 +78,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions): UseAudioPlayerRe
       setIsPlaying(true);
 
       // iOS Safari fix: restore position on first play (only on iOS)
-      if (iOS && !hasRestoredPositionRef.current && pendingSeekRef.current !== null) {
-        const seekTime = pendingSeekRef.current;
+      if (iOS && !hasRestoredPositionRef.current && pendingSeekTime !== null) {
+        const seekTime = pendingSeekTime;
         setTimeout(() => {
           if (ws.getDuration() > 0) {
             ws.seekTo(seekTime / ws.getDuration());
             hasRestoredPositionRef.current = true;
-            pendingSeekRef.current = null;
+            setPendingSeekTime(null); // Clear pending position and visual indicator
           }
         }, 100);
       }
@@ -96,10 +111,24 @@ export function useAudioPlayer(options: UseAudioPlayerOptions): UseAudioPlayerRe
 
         if (iOS) {
           // iOS: Store position to restore on first play (requires user interaction)
-          pendingSeekRef.current = seekTime;
+          setPendingSeekTime(seekTime);
 
           // Update UI to show the initial position (clock display only)
           setCurrentTime(seekTime);
+
+          // Try to update WaveSurfer's internal cursor position visually
+          setTimeout(() => {
+            const percent = (seekTime / ws.getDuration()) * 100;
+            // Access the wrapper element and try to update progress
+            const wrapper = ws.getWrapper();
+            if (wrapper) {
+              const progressElement = wrapper.querySelector('[part="progress"]') as HTMLElement;
+              if (progressElement) {
+                progressElement.style.width = `${percent}%`;
+              }
+            }
+          }, 100);
+
           // Note: Cannot seekTo before user interaction on iOS - it will reset to 0
           // The actual seek happens in handlePlay after user clicks play
         } else {
@@ -119,7 +148,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions): UseAudioPlayerRe
       onEndedRef.current?.();
     };
 
-    const handleError = (err: string) => {
+    const handleError = (err: Error) => {
       console.error('[useAudioPlayer] Error:', err);
     };
 
@@ -140,17 +169,14 @@ export function useAudioPlayer(options: UseAudioPlayerOptions): UseAudioPlayerRe
       ws.un('finish', handleFinish);
       ws.un('error', handleError);
     };
-  }, [wavesurferRef, initialPosition, iOS]);
+  }, [wavesurferRef, initialPosition, iOS, pendingSeekTime]);
 
-  // Load audio when URL changes
+  // Load audio when URL changes and reset restoration flag
   useEffect(() => {
     const ws = wavesurferRef.current;
     if (!ws || !audioUrl) return;
 
-    // Reset position restoration flags when loading new audio
     hasRestoredPositionRef.current = false;
-    pendingSeekRef.current = null;
-
     ws.load(audioUrl);
   }, [wavesurferRef, audioUrl]);
 
@@ -174,5 +200,6 @@ export function useAudioPlayer(options: UseAudioPlayerOptions): UseAudioPlayerRe
     playbackRate,
     togglePlay,
     setPlaybackRate,
+    pendingPositionPercent,
   };
 }

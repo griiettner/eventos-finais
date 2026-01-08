@@ -31,6 +31,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     playbackRate,
     togglePlay,
     setPlaybackRate: changePlaybackRate,
+    pendingPositionPercent,
   } = useAudioPlayer({
     wavesurferRef,
     audioUrl,
@@ -62,7 +63,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   return (
     <section className='audio-player-section card'>
       <div className='custom-audio-player'>
-        <div className='waveform-container' ref={containerRef} />
+        <div className='waveform-container' ref={containerRef}>
+          {pendingPositionPercent !== null && (
+            <div
+              className='waveform-pending-cursor'
+              style={{ left: `${pendingPositionPercent}%` }}
+              aria-hidden="true"
+            />
+          )}
+        </div>
 
         <div className='player-controls'>
           <button

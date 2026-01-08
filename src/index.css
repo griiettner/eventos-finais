@@ -2863,6 +2863,19 @@ button {
   background: rgba(255, 255, 255, 0.02);
   border-radius: 8px;
   padding: 10px;
+  position: relative;
+}
+
+/* iOS pending position indicator */
+.waveform-pending-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--primary);
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 0 4px var(--primary-glow);
 }
 
 #waveform ::part(hover-label),
