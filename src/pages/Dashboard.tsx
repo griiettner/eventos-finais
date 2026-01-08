@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { BookOpen, Play, CheckCircle2 } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import { AdminService } from '../services/admin-service';
-import { useAuth } from '../hooks/useAuth';
 
 interface ChapterProgress {
   isCompleted: boolean;
@@ -26,22 +24,22 @@ interface ChapterRow {
 const Dashboard: React.FC = () => {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { loading: authLoading } = useAuth();
 
   useEffect(() => {
+    let mounted = true;
     let retryTimeout: ReturnType<typeof setTimeout>;
     let retryCount = 0;
     const maxRetries = 5;
-    
+
     const fetchData = async () => {
-      if (authLoading) return;
-      
       try {
         // Load chapters and their progress in parallel
         const [chaptersData, progressData] = await Promise.all([
           AdminService.getAllChapters(),
           AdminService.getAllChaptersProgress()
         ]);
+
+        if (!mounted) return;
 
         setChapters(chaptersData.map(c => ({
           id: c.id,
@@ -52,6 +50,8 @@ const Dashboard: React.FC = () => {
         })));
         setIsLoading(false);
       } catch (error) {
+        if (!mounted) return;
+
         if (error instanceof Error && error.message === 'AUTH_INITIALIZING') {
           // Token getter not ready yet, retry after a short delay
           if (retryCount < maxRetries) {
@@ -68,11 +68,12 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchData();
-    
+
     return () => {
+      mounted = false;
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [authLoading]);
+  }, []);
 
   const handleProfileUpdate = async (userData: { username: string; email: string }) => {
     try {
@@ -84,6 +85,21 @@ const Dashboard: React.FC = () => {
       alert('Erro ao atualizar perfil. Por favor, tente novamente.');
     }
   };
+
+  // Memoize sorted chapters to prevent unnecessary recalculations
+  const sortedChapters = useMemo(() => {
+    return [...chapters].sort((a, b) => {
+      const aCompleted = a.progress?.isCompleted || false;
+      const bCompleted = b.progress?.isCompleted || false;
+      if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+      return a.order_index - b.order_index;
+    });
+  }, [chapters]);
+
+  // Find the first incomplete chapter index (memoized)
+  const firstIncompleteIndex = useMemo(() => {
+    return sortedChapters.findIndex(c => !c.progress?.isCompleted);
+  }, [sortedChapters]);
 
   if (isLoading) {
     return (
@@ -128,33 +144,19 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <div className='chapters-grid'>
-            {(() => {
-              const sortedChapters = [...chapters].sort((a, b) => {
-                const aCompleted = a.progress?.isCompleted || false;
-                const bCompleted = b.progress?.isCompleted || false;
-                if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
-                return a.order_index - b.order_index;
-              });
+            {sortedChapters.map((chapter, index) => {
+              const prog = chapter.progress;
+              const hasStarted = prog && (prog.readPagesCount > 0 || prog.isAudioFinished || prog.answeredQuestionsCount > 0);
+              const isCompleted = prog?.isCompleted;
 
-              // Find the first chapter that is not completed
-              const firstIncompleteIndex = sortedChapters.findIndex(c => !c.progress?.isCompleted);
+              // A chapter is enabled if it's already completed OR it's the first incomplete one
+              const isEnabled = isCompleted || index === firstIncompleteIndex;
 
-              return sortedChapters.map((chapter, index) => {
-                const prog = chapter.progress;
-                const hasStarted = prog && (prog.readPagesCount > 0 || prog.isAudioFinished || prog.answeredQuestionsCount > 0);
-                const isCompleted = prog?.isCompleted;
-                
-                // A chapter is enabled if it's already completed OR it's the first incomplete one
-                const isEnabled = isCompleted || index === firstIncompleteIndex;
-
-                return (
-                  <motion.div
-                    key={chapter.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className={`card chapter-card ${isCompleted ? 'completed' : ''} ${hasStarted && !isCompleted ? 'in-progress' : ''} ${!isEnabled ? 'locked' : ''}`}
-                  >
+              return (
+                <div
+                  key={chapter.id}
+                  className={`card chapter-card ${isCompleted ? 'completed' : ''} ${hasStarted && !isCompleted ? 'in-progress' : ''} ${!isEnabled ? 'locked' : ''}`}
+                >
                     <div className='chapter-number'>{chapter.order_index}</div>
                     <div className='chapter-content'>
                       <h3>{chapter.title}</h3>
@@ -224,10 +226,9 @@ const Dashboard: React.FC = () => {
                         <CheckCircle2 size={16} /> Concluído
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 );
-              });
-            })()}
+              })}
           </div>
         )}
       </main>
