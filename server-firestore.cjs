@@ -812,14 +812,15 @@ app.get('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) =>
       .get();
     
     if (snapshot.empty) {
-      return res.json({ isCompleted: false, isAudioFinished: false, lastAudioPosition: 0 });
+      return res.json({ isCompleted: false, isAudioFinished: false, lastAudioPosition: 0, lastAudioPositionPercentage: 0 });
     }
 
     const data = snapshot.docs[0].data();
     res.json({
       isCompleted: data.completed || false,
       isAudioFinished: data.isAudioFinished || false,
-      lastAudioPosition: data.lastAudioPosition || 0
+      lastAudioPosition: data.lastAudioPosition || 0,
+      lastAudioPositionPercentage: data.lastAudioPositionPercentage || 0
     });
   } catch (error) {
     console.error('Error fetching chapter progress:', error);
@@ -915,7 +916,7 @@ app.post('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) =
 // Update audio progress
 app.post('/api/chapters/:chapterId/progress/audio', authMiddleware, async (req, res) => {
   try {
-    const { isAudioFinished, lastPosition } = req.body;
+    const { isAudioFinished, lastPosition, lastPositionPercentage } = req.body;
 
     const snapshot = await db.collection('userProgress')
       .where('userId', '==', req.user.id)
@@ -925,6 +926,7 @@ app.post('/api/chapters/:chapterId/progress/audio', authMiddleware, async (req, 
     const updateData = {
       isAudioFinished: isAudioFinished !== undefined ? isAudioFinished : false,
       lastAudioPosition: lastPosition || 0,
+      lastAudioPositionPercentage: lastPositionPercentage || 0,
       audioUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
@@ -1010,6 +1012,7 @@ app.get('/api/progress/all', authMiddleware, async (req, res) => {
       result[chapter.id] = {
         isCompleted: prog.completed || false,
         isAudioFinished: prog.isAudioFinished || false,
+        lastAudioPositionPercentage: prog.lastAudioPositionPercentage || 0,
         readPagesCount: chReadPages.size,
         totalPagesCount: chPages.length,
         answeredQuestionsCount: chAnswers.size,

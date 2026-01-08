@@ -287,6 +287,7 @@ export class AdminService {
   static async getAllChaptersProgress(): Promise<Record<string, {
     isCompleted: boolean;
     isAudioFinished: boolean;
+    lastAudioPositionPercentage: number;
     readPagesCount: number;
     totalPagesCount: number;
     answeredQuestionsCount: number;
@@ -304,10 +305,10 @@ export class AdminService {
     };
   }
 
-  static async updateAudioProgress(chapterId: string, isAudioFinished: boolean, lastPosition: number = 0): Promise<void> {
+  static async updateAudioProgress(chapterId: string, isAudioFinished: boolean, lastPosition: number = 0, lastPositionPercentage: number = 0): Promise<void> {
     await apiCall(`/api/chapters/${chapterId}/progress/audio`, {
       method: 'POST',
-      body: JSON.stringify({ isAudioFinished, lastPosition })
+      body: JSON.stringify({ isAudioFinished, lastPosition, lastPositionPercentage })
     });
   }
 

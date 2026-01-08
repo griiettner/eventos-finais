@@ -26,8 +26,11 @@ export function useAudioProgressSync(options: UseAudioProgressSyncOptions): void
     if (!ws || !chapterId) return;
 
     const currentPos = ws.getCurrentTime();
+    const duration = ws.getDuration();
+    const percentage = duration > 0 ? Math.round((currentPos / duration) * 100) : 0;
+
     if (currentPos > 0) {
-      AdminService.updateAudioProgress(chapterId, finished, currentPos);
+      AdminService.updateAudioProgress(chapterId, finished, currentPos, percentage);
       lastSavedPosRef.current = currentPos;
       lastSavedTimeRef.current = Date.now();
     }
@@ -73,8 +76,11 @@ export function useAudioProgressSync(options: UseAudioProgressSyncOptions): void
     return () => {
       if (chapterId && wavesurferRef.current) {
         const finalPos = wavesurferRef.current.getCurrentTime();
+        const duration = wavesurferRef.current.getDuration();
+        const percentage = duration > 0 ? Math.round((finalPos / duration) * 100) : 0;
+
         if (finalPos > 0) {
-          AdminService.updateAudioProgress(chapterId, isAudioFinished, finalPos);
+          AdminService.updateAudioProgress(chapterId, isAudioFinished, finalPos, percentage);
         }
       }
     };

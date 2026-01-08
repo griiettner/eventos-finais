@@ -43,7 +43,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     onEnded: () => {
       onAudioFinishedChange(true);
       if (wavesurferRef.current) {
-        AdminService.updateAudioProgress(chapterId, true, wavesurferRef.current.getDuration());
+        const duration = wavesurferRef.current.getDuration();
+        AdminService.updateAudioProgress(chapterId, true, duration, 100);
       }
     },
   });

@@ -7,6 +7,7 @@ import { AdminService } from '../services/admin-service';
 interface ChapterProgress {
   isCompleted: boolean;
   isAudioFinished: boolean;
+  lastAudioPositionPercentage: number;
   readPagesCount: number;
   totalPagesCount: number;
   answeredQuestionsCount: number;
@@ -182,12 +183,12 @@ const Dashboard: React.FC = () => {
                               <Play size={14} /> Áudio
                             </div>
                             <div className='progress-bar-container'>
-                              <div 
-                                className={`progress-bar ${prog.isAudioFinished ? 'finished' : ''}`} 
-                                style={{ width: prog.isAudioFinished ? '100%' : '0%' }}
+                              <div
+                                className={`progress-bar ${prog.isAudioFinished ? 'finished' : ''}`}
+                                style={{ width: `${prog.lastAudioPositionPercentage}%` }}
                               />
                             </div>
-                            <span className='progress-text'>{prog.isAudioFinished ? '100%' : '0%'}</span>
+                            <span className='progress-text'>{prog.lastAudioPositionPercentage}%</span>
                           </div>
 
                           <div className='progress-item'>
