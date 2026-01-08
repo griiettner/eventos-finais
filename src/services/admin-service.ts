@@ -295,18 +295,19 @@ export class AdminService {
     return apiCall('/api/progress/all');
   }
 
-  static async getChapterProgress(chapterId: string): Promise<{ is_completed: boolean; is_audio_finished: boolean }> {
-    const progress = await apiCall<{ isCompleted: boolean; isAudioFinished: boolean }>(`/api/chapters/${chapterId}/progress`);
+  static async getChapterProgress(chapterId: string): Promise<{ is_completed: boolean; is_audio_finished: boolean; last_audio_position: number }> {
+    const progress = await apiCall<{ isCompleted: boolean; isAudioFinished: boolean; lastAudioPosition: number }>(`/api/chapters/${chapterId}/progress`);
     return {
       is_completed: progress.isCompleted,
-      is_audio_finished: progress.isAudioFinished || false
+      is_audio_finished: progress.isAudioFinished || false,
+      last_audio_position: progress.lastAudioPosition || 0
     };
   }
 
-  static async updateAudioProgress(chapterId: string, isAudioFinished: boolean): Promise<void> {
+  static async updateAudioProgress(chapterId: string, isAudioFinished: boolean, lastPosition: number = 0): Promise<void> {
     await apiCall(`/api/chapters/${chapterId}/progress/audio`, {
       method: 'POST',
-      body: JSON.stringify({ isAudioFinished })
+      body: JSON.stringify({ isAudioFinished, lastPosition })
     });
   }
 

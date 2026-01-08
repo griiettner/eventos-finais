@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { 
-  CheckCircle2, ChevronLeft, ChevronRight, 
-  Save, Moon, Book, Sun, 
-  Type, Pause, Play, VolumeX, Volume2, X 
+import {
+  CheckCircle2, ChevronLeft, ChevronRight,
+  Save, Moon, Book, Sun,
+  Type, Pause, Play, X
 } from 'lucide-react';
 import { AdminService, type Chapter, type ChapterPage } from '../services/admin-service';
 import ContentModal from '../components/ContentModal';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import AudioPlayer from '../components/AudioPlayer';
 import { useAuth } from '../hooks/useAuth';
 
 const ChapterDetail: React.FC = () => {
@@ -35,29 +36,8 @@ const ChapterDetail: React.FC = () => {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [questions, setQuestions] = useState<{ id: string; text: string }[]>([]);
   const answersRef = useRef<Record<string, string>>({});
-
-  // Audio player state
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.8);
-  const [isMuted, setIsMuted] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
-
-  // Build full URL for audio (now stored as full URL in Firestore)
-  const getAudioUrl = (path: string | undefined) => {
-    if (!path) return '';
-    return path;
-  };
-
-  // Format time in MM:SS
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds) || !isFinite(seconds) || seconds < 0) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const [lastAudioPosition, setLastAudioPosition] = useState(0);
+  const [progressLoaded, setProgressLoaded] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -89,10 +69,12 @@ const ChapterDetail: React.FC = () => {
         const readPageIds = new Set(readProgress.filter(p => p.is_read).map(p => p.page_id));
         setReadPages(readPageIds);
 
-        // Load completion status from API
+        // Load completion status and audio position from API
         const progress = await AdminService.getChapterProgress(id);
         setIsCompleted(progress.is_completed);
         setIsAudioFinished(progress.is_audio_finished || false);
+        setLastAudioPosition(progress.last_audio_position || 0);
+        setProgressLoaded(true);
 
         // Load saved answers from API
         const savedAnswers = await AdminService.getChapterAnswers(id);
@@ -349,18 +331,6 @@ const ChapterDetail: React.FC = () => {
     );
   }
 
-  const handleAudioEnded = async () => {
-    setIsPlaying(false);
-    if (!id || isAudioFinished) return;
-
-    try {
-      await AdminService.updateAudioProgress(id, true);
-      setIsAudioFinished(true);
-    } catch (error) {
-      console.error('Failed to mark audio as finished:', error);
-    }
-  };
-
   const handleToggleCompletion = async () => {
     if (!id) return;
     try {
@@ -496,140 +466,14 @@ const ChapterDetail: React.FC = () => {
           </>
         )}
 
-        {chapter.audio_url && (
-          <section className='audio-player-section card'>
-            <div className='custom-audio-player'>
-              <div className='player-controls'>
-                <button 
-                  onClick={async () => {
-                    if (audioRef.current) {
-                      if (isPlaying) {
-                        audioRef.current.pause();
-                      } else {
-                        try {
-                          await audioRef.current.play();
-                        } catch (error) {
-                          console.error('Audio play failed:', error);
-                        }
-                      }
-                    }
-                  }} 
-                  className='play-btn'
-                >
-                  {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-                </button>
-                
-                <div className='progress-container'>
-                  <span className='time-display'>
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
-                  <input
-                    type='range'
-                    min={0}
-                    max={duration || 100}
-                    value={currentTime}
-                    onChange={(e) => {
-                      const time = Number(e.target.value);
-                      if (audioRef.current) {
-                        audioRef.current.currentTime = time;
-                      }
-                      setCurrentTime(time);
-                    }}
-                    className='progress-slider'
-                  />
-                </div>
-
-                <div className='speed-controls'>
-                  <select
-                    value={playbackRate}
-                    onChange={(e) => {
-                      const rate = Number(e.target.value);
-                      if (audioRef.current) {
-                        audioRef.current.playbackRate = rate;
-                      }
-                      setPlaybackRate(rate);
-                    }}
-                    className='speed-select'
-                  >
-                    <option value={0.5}>0.5x</option>
-                    <option value={0.75}>0.75x</option>
-                    <option value={1}>1x</option>
-                    <option value={1.25}>1.25x</option>
-                    <option value={1.5}>1.5x</option>
-                    <option value={1.75}>1.75x</option>
-                    <option value={2}>2x</option>
-                  </select>
-                </div>
-
-                <div className='volume-controls'>
-                  <button 
-                    onClick={() => {
-                      if (audioRef.current) {
-                        audioRef.current.muted = !isMuted;
-                      }
-                      setIsMuted(!isMuted);
-                    }}
-                    className='volume-btn'
-                  >
-                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                  </button>
-                  <input
-                    type='range'
-                    min={0}
-                    max={1}
-                    step={0.1}
-                    value={isMuted ? 0 : volume}
-                    onChange={(e) => {
-                      const vol = Number(e.target.value);
-                      if (audioRef.current) {
-                        audioRef.current.volume = vol;
-                      }
-                      setVolume(vol);
-                      setIsMuted(vol === 0);
-                    }}
-                    className='volume-slider'
-                  />
-                </div>
-              </div>
-
-              <audio
-                ref={audioRef}
-                src={getAudioUrl(chapter.audio_url)}
-                preload="metadata"
-                playsInline
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onTimeUpdate={() => {
-                  if (audioRef.current) {
-                    setCurrentTime(audioRef.current.currentTime);
-                  }
-                }}
-                onLoadedMetadata={() => {
-                  if (audioRef.current) {
-                    setDuration(audioRef.current.duration);
-                    audioRef.current.volume = volume;
-                  }
-                }}
-                onEnded={handleAudioEnded}
-                onError={(e) => {
-                  const audio = e.currentTarget;
-                  const error = audio.error;
-                  console.error('Audio error:', {
-                    code: error?.code,
-                    message: error?.message,
-                    src: audio.src,
-                    networkState: audio.networkState,
-                    readyState: audio.readyState
-                  });
-                }}
-              />
-              {isAudioFinished && (
-                <div className="audio-finished-badge">
-                  <CheckCircle2 size={16} /> Áudio concluído
-                </div>
-              )}
-            </div>
-          </section>
+        {chapter.audio_url && progressLoaded && id && (
+          <AudioPlayer
+            chapterId={id}
+            audioUrl={chapter.audio_url}
+            initialPosition={lastAudioPosition}
+            isAudioFinished={isAudioFinished}
+            onAudioFinishedChange={setIsAudioFinished}
+          />
         )}
 
         <section className='study-questions card'>
