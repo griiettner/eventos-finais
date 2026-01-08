@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Pause, Play } from 'lucide-react';
+import { CheckCircle2, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { AdminService } from '../services/admin-service';
 import { useWaveSurfer } from '../hooks/useWaveSurfer';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
@@ -21,7 +21,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onAudioFinishedChange
 }) => {
   // Hook 1: Create WaveSurfer instance
-  const { containerRef, wavesurferRef, isLoading, isReady } = useWaveSurfer();
+  const { containerRef, wavesurferRef, isLoading } = useWaveSurfer();
 
   // Hook 2: Manage player controls and state
   const {
@@ -29,9 +29,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     currentTime,
     duration,
     playbackRate,
+    volume,
+    isMuted,
     togglePlay,
     setPlaybackRate: changePlaybackRate,
-    pendingPositionPercent,
+    setVolume,
+    setMuted,
+    seek,
   } = useAudioPlayer({
     wavesurferRef,
     audioUrl,
@@ -63,60 +67,72 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   return (
     <section className='audio-player-section card'>
       <div className='custom-audio-player'>
-        <div className='waveform-container' ref={containerRef}>
-          {pendingPositionPercent !== null && (
-            <div
-              className='waveform-pending-cursor'
-              style={{ left: `${pendingPositionPercent}%` }}
-              aria-hidden="true"
-            />
-          )}
-        </div>
-
         <div className='player-controls'>
-          <button
-            onClick={togglePlay}
-            className='play-btn'
-            disabled={isLoading || !isReady}
-          >
-            {isLoading ? (
-              <span style={{ fontSize: '12px' }}>...</span>
-            ) : isPlaying ? (
-              <Pause size={24} />
-            ) : (
-              <Play size={24} />
-            )}
-          </button>
-
           <div className='progress-container'>
-            <span className='time-display'>
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
-          </div>
-
-          <div className='speed-controls'>
-            <select
-              value={playbackRate}
-              onChange={(e) => changePlaybackRate(Number(e.target.value))}
-              className='speed-select'
-              disabled={!isReady}
+            <button
+              onClick={togglePlay}
+              className='play-btn'
+              disabled={isLoading}
             >
-              <option value={0.5}>0.5x</option>
-              <option value={0.75}>0.75x</option>
-              <option value={1}>1x</option>
-              <option value={1.25}>1.25x</option>
-              <option value={1.5}>1.5x</option>
-              <option value={1.75}>1.75x</option>
-              <option value={2}>2x</option>
-            </select>
+              {isLoading ? (
+                <span className='loading-spinner'>...</span>
+              ) : isPlaying ? (
+                <Pause size={24} />
+              ) : (
+                <Play size={24} />
+              )}
+            </button>
+            {isAudioFinished && (
+              <div className='audio-finished-badge'>
+                <CheckCircle2 size={16} /> <span>Áudio concluído</span>
+              </div>
+            )}
+            <div className='speed-controls-buttons'>
+              {[1, 1.5, 2].map((rate) => (
+                <button
+                  key={rate}
+                  onClick={() => changePlaybackRate(rate)}
+                  className={`speed-btn ${playbackRate === rate ? 'active' : ''}`}
+                >
+                  {rate}x
+                </button>
+              ))}
+            </div>
+            <div className='volume-controls'>
+              <button onClick={() => setMuted(!isMuted)} className='volume-btn'>
+                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+              </button>
+              <input
+                type='range'
+                min={0}
+                max={1}
+                step={0.1}
+                value={isMuted ? 0 : volume}
+                onChange={(e) => {
+                  const vol = Number(e.target.value);
+                  setVolume(vol);
+                }}
+                className='volume-slider'
+              />
+            </div>
           </div>
         </div>
 
-        {isAudioFinished && (
-          <div className="audio-finished-badge">
-            <CheckCircle2 size={16} /> Áudio concluído
-          </div>
-        )}
+        <span className='time-display'>
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </span>
+        <input
+          type='range'
+          min={0}
+          max={duration || 100}
+          value={currentTime}
+          onChange={(e) => {
+            const time = Number(e.target.value);
+            seek(time);
+          }}
+          className='progress-slider'
+        />
+        <div ref={containerRef} className="waveform-container"></div>
       </div>
     </section>
   );

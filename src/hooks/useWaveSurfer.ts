@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 
 interface UseWaveSurferReturn {
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   wavesurferRef: React.RefObject<WaveSurfer | null>;
   isLoading: boolean;
   isReady: boolean;
@@ -14,7 +14,7 @@ interface UseWaveSurferReturn {
  * Does NOT manage playback state or events
  */
 export function useWaveSurfer(): UseWaveSurferReturn {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -26,9 +26,9 @@ export function useWaveSurfer(): UseWaveSurferReturn {
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: '#4a5568',
-      progressColor: '#3182ce',
-      cursorColor: '#3182ce',
+      waveColor: '#2a4735',
+      progressColor: 'rgba(74, 222, 128, .6)',
+      cursorColor: 'rgba(74, 222, 128, 1)',
       barWidth: 2,
       barGap: 1,
       barRadius: 2,

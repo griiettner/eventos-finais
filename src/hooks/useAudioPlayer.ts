@@ -15,8 +15,13 @@ interface UseAudioPlayerReturn {
   currentTime: number;
   duration: number;
   playbackRate: number;
+  volume: number;
+  isMuted: boolean;
   togglePlay: () => void;
   setPlaybackRate: (rate: number) => void;
+  setVolume: (volume: number) => void;
+  setMuted: (muted: boolean) => void;
+  seek: (time: number) => void;
   // For iOS: percentage (0-100) where audio will start, null if no pending position
   pendingPositionPercent: number | null;
 }
@@ -38,6 +43,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions): UseAudioPlayerRe
   const [currentTime, setCurrentTime] = useState(initialPosition); // Initialize with saved position
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRateState] = useState(1);
+  const [volume, setVolumeState] = useState(1);
+  const [isMuted, setIsMutedState] = useState(false);
   const [pendingSeekTime, setPendingSeekTime] = useState<number | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState(audioUrl);
 
@@ -193,13 +200,45 @@ export function useAudioPlayer(options: UseAudioPlayerOptions): UseAudioPlayerRe
     setPlaybackRateState(rate);
   }, [wavesurferRef]);
 
+  const setVolume = useCallback((vol: number) => {
+    const ws = wavesurferRef.current;
+    if (!ws) return;
+
+    ws.setVolume(vol);
+    setVolumeState(vol);
+    if (vol > 0 && isMuted) {
+      setIsMutedState(false);
+    }
+  }, [wavesurferRef, isMuted]);
+
+  const setMuted = useCallback((muted: boolean) => {
+    const ws = wavesurferRef.current;
+    if (!ws) return;
+
+    ws.setMuted(muted);
+    setIsMutedState(muted);
+  }, [wavesurferRef]);
+
+  const seek = useCallback((time: number) => {
+    const ws = wavesurferRef.current;
+    if (!ws || duration === 0) return;
+
+    const seekRatio = time / duration;
+    ws.seekTo(seekRatio);
+  }, [wavesurferRef, duration]);
+
   return {
     isPlaying,
     currentTime,
     duration,
     playbackRate,
+    volume,
+    isMuted,
     togglePlay,
     setPlaybackRate,
+    setVolume,
+    setMuted,
+    seek,
     pendingPositionPercent,
   };
 }
