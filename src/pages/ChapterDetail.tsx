@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   CheckCircle2, ChevronLeft, ChevronRight,
   Save, Moon, Book, Sun,
-  Type, Pause, Play, X
+  Type, X
 } from 'lucide-react';
 import { AdminService, type Chapter, type ChapterPage } from '../services/admin-service';
 import ContentModal from '../components/ContentModal';
