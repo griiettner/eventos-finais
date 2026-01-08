@@ -13,12 +13,18 @@ import AdminDashboard from './pages/AdminDashboard';
 import AddEditChapter from './pages/AddEditChapter';
 import ChapterQuestions from './pages/ChapterQuestions';
 import AdminRoute from './components/AdminRoute';
-import { AnimatePresence } from 'framer-motion';
-
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
+  const [isReady, setIsReady] = React.useState(false);
 
-  if (loading)
+  // Only show loading screen on initial load, not on re-renders
+  React.useEffect(() => {
+    if (!loading && user) {
+      setIsReady(true);
+    }
+  }, [loading, user]);
+
+  if (loading && !isReady) {
     return (
       <div
         className='loading-screen'
@@ -34,6 +40,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
         Carregando...
       </div>
     );
+  }
 
   if (!user) {
     return <Navigate to='/login' />;
@@ -44,70 +51,66 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const AppContent: React.FC = () => {
   return (
-    <>
-      <AnimatePresence mode='wait'>
-        <Routes>
-          <Route path='/' element={<LandingPage />} />
-          <Route path='/login' element={<LoginPage />} />
-          <Route
-            path='/dashboard'
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/chapter/:id'
-            element={
-              <ProtectedRoute>
-                <ChapterDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/help'
-            element={
-              <ProtectedRoute>
-                <HelpPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/admin'
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path='/admin/chapter/new'
-            element={
-              <AdminRoute>
-                <AddEditChapter />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path='/admin/chapter/:id'
-            element={
-              <AdminRoute>
-                <AddEditChapter />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path='/admin/chapter/:id/questions'
-            element={
-              <AdminRoute>
-                <ChapterQuestions />
-              </AdminRoute>
-            }
-          />
-        </Routes>
-      </AnimatePresence>
-    </>
+    <Routes>
+      <Route path='/' element={<LandingPage />} />
+      <Route path='/login' element={<LoginPage />} />
+      <Route
+        path='/dashboard'
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/chapter/:id'
+        element={
+          <ProtectedRoute>
+            <ChapterDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/help'
+        element={
+          <ProtectedRoute>
+            <HelpPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/admin'
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path='/admin/chapter/new'
+        element={
+          <AdminRoute>
+            <AddEditChapter />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path='/admin/chapter/:id'
+        element={
+          <AdminRoute>
+            <AddEditChapter />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path='/admin/chapter/:id/questions'
+        element={
+          <AdminRoute>
+            <ChapterQuestions />
+          </AdminRoute>
+        }
+      />
+    </Routes>
   );
 };
 
