@@ -31,6 +31,9 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+    labels:
+      - "coolify.managed=true"
+      - "coolify.port=80"
 
   # Backend API (Firestore + Kinde JWT validation)
   api:
@@ -47,6 +50,9 @@ services:
     volumes:
       - uploads_data:/app/uploads
     restart: unless-stopped
+    labels:
+      - "coolify.managed=true"
+      - "coolify.port=3001"
 
 volumes:
   uploads_data:
