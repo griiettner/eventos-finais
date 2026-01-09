@@ -18,6 +18,12 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://eventosfinais.jaxreset.com',
+  'https://eventosfinais-dev.jaxreset.com',
+];
+
 // Initialize Firebase Admin SDK
 // Option 1: Use service account JSON file (production)
 // Option 2: Use environment variables (local dev)
@@ -133,11 +139,6 @@ const upload = multer({
   }
 });
 
-  const allowedOrigins = [
-    'http://localhost:5173',
-    'https://eventosfinais.jaxreset.com'
-  ];
-
   app.use(cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl)
@@ -219,10 +220,6 @@ app.get('/uploads/audio/:filename', (req, res) => {
     origin: req.headers.origin
   });
   
-  const allowedOrigins = [
-    'http://localhost:5173',
-    'https://eventosfinais.jaxreset.com'
-  ];
   const origin = req.headers.origin;
   const referer = req.headers.referer;
 
