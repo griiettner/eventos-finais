@@ -86,7 +86,7 @@ const ModalContentEditor: React.FC<ModalContentEditorProps> = ({
           <button onClick={onClose} className="btn-secondary">
             Cancelar
           </button>
-          <button onClick={handleSave} className="btn-primary">
+          <button onClick={handleSave} className="btn-primary btn-base">
             <Save size={16} /> Salvar Modal
           </button>
         </div>

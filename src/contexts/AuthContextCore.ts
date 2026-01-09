@@ -11,6 +11,7 @@ export interface AuthContextType {
   loading: boolean;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  isAdminCheckComplete: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

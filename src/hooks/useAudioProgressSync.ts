@@ -6,7 +6,6 @@ interface UseAudioProgressSyncOptions {
   chapterId: string | undefined;
   wavesurferRef: React.RefObject<WaveSurfer | null>;
   isPlaying: boolean;
-  isAudioFinished: boolean;
   intervalMs?: number;
 }
 
@@ -15,13 +14,13 @@ interface UseAudioProgressSyncOptions {
  * Responsibility: Save progress periodically, on pause, and on unmount
  */
 export function useAudioProgressSync(options: UseAudioProgressSyncOptions): void {
-  const { chapterId, wavesurferRef, isPlaying, isAudioFinished, intervalMs = 3000 } = options;
+  const { chapterId, wavesurferRef, isPlaying, intervalMs = 3000 } = options;
 
   const lastSavedPosRef = useRef(0);
   const lastSavedTimeRef = useRef(0);
 
   // Save progress helper
-  const saveProgress = useCallback((finished: boolean) => {
+  const saveProgress = useCallback(() => {
     const ws = wavesurferRef.current;
     if (!ws || !chapterId) return;
 
@@ -30,7 +29,8 @@ export function useAudioProgressSync(options: UseAudioProgressSyncOptions): void
     const percentage = duration > 0 ? Math.round((currentPos / duration) * 100) : 0;
 
     if (currentPos > 0) {
-      AdminService.updateAudioProgress(chapterId, finished, currentPos, percentage);
+      // isAudioFinished is determined by audioPlayCount in the backend, so we always pass false here
+      AdminService.updateAudioProgress(chapterId, false, currentPos, percentage);
       lastSavedPosRef.current = currentPos;
       lastSavedTimeRef.current = Date.now();
     }
@@ -51,7 +51,7 @@ export function useAudioProgressSync(options: UseAudioProgressSyncOptions): void
 
       // Save if enough time has passed and position changed
       if (timeDiff >= intervalMs && posDiff >= 1 && currentPos > 0) {
-        saveProgress(false);
+        saveProgress();
       }
     }, 1000); // Check every second
 
@@ -66,7 +66,7 @@ export function useAudioProgressSync(options: UseAudioProgressSyncOptions): void
       const posDiff = Math.abs(currentPos - lastSavedPosRef.current);
 
       if (posDiff >= 0.5 && currentPos > 0) {
-        saveProgress(false);
+        saveProgress();
       }
     }
   }, [isPlaying, saveProgress, wavesurferRef]);
@@ -80,9 +80,10 @@ export function useAudioProgressSync(options: UseAudioProgressSyncOptions): void
         const percentage = duration > 0 ? Math.round((finalPos / duration) * 100) : 0;
 
         if (finalPos > 0) {
-          AdminService.updateAudioProgress(chapterId, isAudioFinished, finalPos, percentage);
+          // isAudioFinished is determined by audioPlayCount in the backend
+          AdminService.updateAudioProgress(chapterId, false, finalPos, percentage);
         }
       }
     };
-  }, [chapterId, wavesurferRef, isAudioFinished]);
+  }, [chapterId, wavesurferRef]);
 }

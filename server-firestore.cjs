@@ -817,9 +817,9 @@ app.get('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) =>
       .where('userId', '==', req.user.id)
       .where('chapterId', '==', req.params.chapterId)
       .get();
-    
+
     if (snapshot.empty) {
-      return res.json({ isCompleted: false, isAudioFinished: false, lastAudioPosition: 0, lastAudioPositionPercentage: 0 });
+      return res.json({ isCompleted: false, isAudioFinished: false, lastAudioPosition: 0, lastAudioPositionPercentage: 0, audioPlayCount: 0 });
     }
 
     const data = snapshot.docs[0].data();
@@ -827,7 +827,8 @@ app.get('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) =>
       isCompleted: data.completed || false,
       isAudioFinished: data.isAudioFinished || false,
       lastAudioPosition: data.lastAudioPosition || 0,
-      lastAudioPositionPercentage: data.lastAudioPositionPercentage || 0
+      lastAudioPositionPercentage: data.lastAudioPositionPercentage || 0,
+      audioPlayCount: data.audioPlayCount || 0
     });
   } catch (error) {
     console.error('Error fetching chapter progress:', error);
@@ -923,7 +924,7 @@ app.post('/api/chapters/:chapterId/progress', authMiddleware, async (req, res) =
 // Update audio progress
 app.post('/api/chapters/:chapterId/progress/audio', authMiddleware, async (req, res) => {
   try {
-    const { isAudioFinished, lastPosition, lastPositionPercentage } = req.body;
+    const { isAudioFinished, lastPosition, lastPositionPercentage, incrementPlayCount } = req.body;
 
     const snapshot = await db.collection('userProgress')
       .where('userId', '==', req.user.id)
@@ -937,6 +938,11 @@ app.post('/api/chapters/:chapterId/progress/audio', authMiddleware, async (req, 
       audioUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
+    // Increment play count if requested
+    if (incrementPlayCount) {
+      updateData.audioPlayCount = admin.firestore.FieldValue.increment(1);
+    }
+
     if (!snapshot.empty) {
       await snapshot.docs[0].ref.update(updateData);
     } else {
@@ -944,6 +950,7 @@ app.post('/api/chapters/:chapterId/progress/audio', authMiddleware, async (req, 
         userId: req.user.id,
         chapterId: req.params.chapterId,
         ...updateData,
+        audioPlayCount: incrementPlayCount ? 1 : 0,
         completed: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()

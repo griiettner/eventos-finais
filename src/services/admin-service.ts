@@ -294,7 +294,7 @@ export class AdminService {
 
   static async getChapterDetailedProgress(chapterId: string): Promise<{
     isCompleted: boolean;
-    isAudioFinished: boolean;
+    audioPlayCount: number;
     readPagesCount: number;
     totalPagesCount: number;
     answeredQuestionsCount: number;
@@ -305,7 +305,7 @@ export class AdminService {
 
   static async getAllChaptersProgress(): Promise<Record<string, {
     isCompleted: boolean;
-    isAudioFinished: boolean;
+    audioPlayCount: number;
     lastAudioPositionPercentage: number;
     readPagesCount: number;
     totalPagesCount: number;
@@ -315,19 +315,19 @@ export class AdminService {
     return apiCall('/api/progress/all');
   }
 
-  static async getChapterProgress(chapterId: string): Promise<{ is_completed: boolean; is_audio_finished: boolean; last_audio_position: number }> {
-    const progress = await apiCall<{ isCompleted: boolean; isAudioFinished: boolean; lastAudioPosition: number }>(`/api/chapters/${chapterId}/progress`);
+  static async getChapterProgress(chapterId: string): Promise<{ is_completed: boolean; last_audio_position: number; audio_play_count: number }> {
+    const progress = await apiCall<{ isCompleted: boolean; lastAudioPosition: number; audioPlayCount: number }>(`/api/chapters/${chapterId}/progress`);
     return {
       is_completed: progress.isCompleted,
-      is_audio_finished: progress.isAudioFinished || false,
-      last_audio_position: progress.lastAudioPosition || 0
+      last_audio_position: progress.lastAudioPosition || 0,
+      audio_play_count: progress.audioPlayCount || 0
     };
   }
 
-  static async updateAudioProgress(chapterId: string, isAudioFinished: boolean, lastPosition: number = 0, lastPositionPercentage: number = 0): Promise<void> {
+  static async updateAudioProgress(chapterId: string, isAudioFinished: boolean, lastPosition: number = 0, lastPositionPercentage: number = 0, incrementPlayCount: boolean = false): Promise<void> {
     await apiCall(`/api/chapters/${chapterId}/progress/audio`, {
       method: 'POST',
-      body: JSON.stringify({ isAudioFinished, lastPosition, lastPositionPercentage })
+      body: JSON.stringify({ isAudioFinished, lastPosition, lastPositionPercentage, incrementPlayCount })
     });
   }
 

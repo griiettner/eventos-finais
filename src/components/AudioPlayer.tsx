@@ -9,16 +9,16 @@ interface AudioPlayerProps {
   chapterId: string;
   audioUrl: string;
   initialPosition: number;
-  isAudioFinished: boolean;
-  onAudioFinishedChange: (finished: boolean) => void;
+  audioPlayCount: number;
+  onAudioPlayCountChange: (count: number) => void;
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({
   chapterId,
   audioUrl,
   initialPosition,
-  isAudioFinished,
-  onAudioFinishedChange
+  audioPlayCount,
+  onAudioPlayCountChange
 }) => {
   // Hook 1: Create WaveSurfer instance
   const { containerRef, wavesurferRef, isLoading } = useWaveSurfer();
@@ -41,10 +41,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     audioUrl,
     initialPosition,
     onEnded: () => {
-      onAudioFinishedChange(true);
       if (wavesurferRef.current) {
         const duration = wavesurferRef.current.getDuration();
-        AdminService.updateAudioProgress(chapterId, true, duration, 100);
+        // Increment play count when audio finishes
+        AdminService.updateAudioProgress(chapterId, true, duration, 100, true);
+        onAudioPlayCountChange(audioPlayCount + 1);
       }
     },
   });
@@ -54,7 +55,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     chapterId,
     wavesurferRef,
     isPlaying,
-    isAudioFinished,
   });
 
   // Format time helper
@@ -83,11 +83,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 <Play size={24} />
               )}
             </button>
-            {isAudioFinished && (
-              <div className='audio-finished-badge'>
-                <CheckCircle2 size={16} /> <span>Áudio concluído</span>
-              </div>
-            )}
+            <div className='audio-status-badges'>
+              {audioPlayCount > 0 && (
+                <>
+                  <div className='audio-finished-badge'>
+                    <CheckCircle2 size={16} /> <span>Áudio concluído</span>
+                  </div>
+                  <div className='audio-play-count-badge'>
+                    <span>Reproduções: {audioPlayCount}</span>
+                  </div>
+                </>
+              )}
+            </div>
             <div className='speed-controls-buttons'>
               {[1, 1.5, 2].map((rate) => (
                 <button

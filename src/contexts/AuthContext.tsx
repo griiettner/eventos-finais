@@ -8,6 +8,7 @@ import { setFirebaseAuthTokenGetter } from '../services/firebase-service';
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user: kindeUser, isAuthenticated, isLoading, logout: kindeLogout, getClaim, getToken } = useKindeAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminCheckComplete, setIsAdminCheckComplete] = useState(false);
   const [profileData, setProfileData] = useState<{ username: string; email: string } | null>(null);
 
   // Set up token getter for API calls
@@ -37,13 +38,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const init = async () => {
       try {
-        if (isAuthenticated && kindeUser) {
+        if (!isLoading && isAuthenticated && kindeUser) {
+          setIsAdminCheckComplete(false); // Reset ao iniciar check
+
           // Check if user has admin role from Kinde token claims
           const rolesClaim = await getClaim('roles');
-          
+
           let hasAdminRole = false;
           const rolesValue = rolesClaim?.value;
-          
+
           if (Array.isArray(rolesValue)) {
             hasAdminRole = rolesValue.some((role: string | { key?: string; name?: string }) => {
               if (typeof role === 'string') {
@@ -56,15 +59,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           setIsAdmin(hasAdminRole);
+          setIsAdminCheckComplete(true); // Marcar como completo após verificação
+
           // Initial profile fetch
           await fetchProfile();
-        } else {
+        } else if (!isAuthenticated) {
           setIsAdmin(false);
           setProfileData(null);
+          setIsAdminCheckComplete(true); // Não autenticado = check completo
         }
       } catch (err) {
         console.error('[AuthContext] Auth sync error:', err);
         setIsAdmin(false);
+        setIsAdminCheckComplete(true); // Erro = check completo
       }
     };
     init();
@@ -89,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading: isLoading,
     logout,
     refreshProfile,
+    isAdminCheckComplete,
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

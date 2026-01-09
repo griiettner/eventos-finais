@@ -6,12 +6,12 @@ import { AdminService } from '../services/admin-service';
 
 interface ChapterProgress {
   isCompleted: boolean;
-  isAudioFinished: boolean;
   lastAudioPositionPercentage: number;
   readPagesCount: number;
   totalPagesCount: number;
   answeredQuestionsCount: number;
   totalQuestionsCount: number;
+  audioPlayCount?: number;
 }
 
 interface ChapterRow {
@@ -147,7 +147,7 @@ const Dashboard: React.FC = () => {
           <div className='chapters-grid'>
             {sortedChapters.map((chapter, index) => {
               const prog = chapter.progress;
-              const hasStarted = prog && (prog.readPagesCount > 0 || prog.isAudioFinished || prog.answeredQuestionsCount > 0 || prog.lastAudioPositionPercentage > 0);
+              const hasStarted = prog && (prog.readPagesCount > 0 || (prog.audioPlayCount || 0) > 0 || prog.answeredQuestionsCount > 0 || prog.lastAudioPositionPercentage > 0);
               const isCompleted = prog?.isCompleted;
 
               // A chapter is enabled if it's already completed OR it's the first incomplete one
@@ -184,7 +184,7 @@ const Dashboard: React.FC = () => {
                             </div>
                             <div className='progress-bar-container'>
                               <div
-                                className={`progress-bar ${prog.isAudioFinished ? 'finished' : ''}`}
+                                className={`progress-bar ${(prog.audioPlayCount || 0) > 0 ? 'finished' : ''}`}
                                 style={{ width: `${prog.lastAudioPositionPercentage}%` }}
                               />
                             </div>

@@ -7,9 +7,10 @@ interface AdminRouteProps {
 }
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdminCheckComplete } = useAuth();
 
-  if (loading) {
+  // Aguardar tanto loading do Kinde quanto check de admin
+  if (loading || !isAdminCheckComplete) {
     return (
       <div
         className='loading-screen'
@@ -22,7 +23,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
           color: 'var(--primary)',
         }}
       >
-        Carregando...
+        Verificando permissões...
       </div>
     );
   }
@@ -31,6 +32,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to='/login' />;
   }
 
+  // Agora é seguro verificar isAdmin
   if (!user.isAdmin) {
     return <Navigate to='/dashboard' />;
   }

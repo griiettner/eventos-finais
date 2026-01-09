@@ -1004,6 +1004,42 @@ button {
   box-shadow: 0 0 10px var(--primary-glow);
 }
 
+.audio-status-badges {
+  display: flex;
+}
+
+.audio-finished-badge {
+  display: flex;
+  align-items: center;
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin: auto 0;
+  width: fit-content;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  gap: 6px;
+}
+
+@media (max-width: 600px) {
+  .audio-finished-badge {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: block;
+    height: 30px;
+    width: 30px;
+    padding: 6px;
+  }
+
+  .audio-finished-badge>span {
+    display: none;
+  }
+}
+
 /* Study Questions */
 .study-questions {
   margin-top: var(--spacing-3xl);

@@ -22,7 +22,6 @@ const ChapterDetail: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; content: string } | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isAudioFinished, setIsAudioFinished] = useState(false);
   const [readPages, setReadPages] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<'dark' | 'sepia' | 'light'>('dark');
   const [fontSize, setFontSize] = useState(18);
@@ -37,6 +36,7 @@ const ChapterDetail: React.FC = () => {
   const [questions, setQuestions] = useState<{ id: string; text: string }[]>([]);
   const answersRef = useRef<Record<string, string>>({});
   const [lastAudioPosition, setLastAudioPosition] = useState(0);
+  const [audioPlayCount, setAudioPlayCount] = useState(0);
   const [progressLoaded, setProgressLoaded] = useState(false);
 
   useEffect(() => {
@@ -72,8 +72,8 @@ const ChapterDetail: React.FC = () => {
         // Load completion status and audio position from API
         const progress = await AdminService.getChapterProgress(id);
         setIsCompleted(progress.is_completed);
-        setIsAudioFinished(progress.is_audio_finished || false);
         setLastAudioPosition(progress.last_audio_position || 0);
+        setAudioPlayCount(progress.audio_play_count || 0);
         setProgressLoaded(true);
 
         // Load saved answers from API
@@ -305,8 +305,8 @@ const ChapterDetail: React.FC = () => {
   }, [pages, readPages]);
 
   const canComplete = useMemo(() => {
-    return allQuestionsAnswered && (isAudioFinished || allPagesRead);
-  }, [allQuestionsAnswered, isAudioFinished, allPagesRead]);
+    return allQuestionsAnswered && (audioPlayCount > 0 || allPagesRead);
+  }, [allQuestionsAnswered, audioPlayCount, allPagesRead]);
 
   if (isLoading) {
     return (
@@ -323,7 +323,7 @@ const ChapterDetail: React.FC = () => {
       <div className="chapter-detail-layout">
         <div style={{ textAlign: 'center', padding: '4rem' }}>
           <h2 style={{ color: 'var(--text-dim)' }}>Capítulo não encontrado</h2>
-          <button onClick={() => navigate('/dashboard')} className="btn-primary" style={{ marginTop: '1rem' }}>
+          <button onClick={() => navigate('/dashboard')} className="btn-primary btn-base" style={{ marginTop: '1rem' }}>
             Voltar ao Dashboard
           </button>
         </div>
@@ -471,8 +471,8 @@ const ChapterDetail: React.FC = () => {
             chapterId={id}
             audioUrl={chapter.audio_url}
             initialPosition={lastAudioPosition}
-            isAudioFinished={isAudioFinished}
-            onAudioFinishedChange={setIsAudioFinished}
+            audioPlayCount={audioPlayCount}
+            onAudioPlayCountChange={setAudioPlayCount}
           />
         )}
 
@@ -520,7 +520,7 @@ const ChapterDetail: React.FC = () => {
             {!isCompleted && !canComplete && (
               <p className="completion-requirement-hint">
                 {!allQuestionsAnswered && "• Responda todas as perguntas "}
-                {!(isAudioFinished || allPagesRead) && "• Ouça o áudio completo ou leia todas as páginas"}
+                {!(audioPlayCount > 0 || allPagesRead) && "• Ouça o áudio completo ou leia todas as páginas"}
               </p>
             )}
           </div>
