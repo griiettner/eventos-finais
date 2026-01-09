@@ -24,8 +24,8 @@ services:
         - VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}
         - VITE_USE_FIREBASE_EMULATOR=${VITE_USE_FIREBASE_EMULATOR}
         - VITE_API_URL=${VITE_API_URL}
-    ports:
-      - "8002:80"
+    expose:
+      - "80"
     environment:
       - NODE_ENV=production
     depends_on:
