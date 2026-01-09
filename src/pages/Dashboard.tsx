@@ -147,7 +147,7 @@ const Dashboard: React.FC = () => {
           <div className='chapters-grid'>
             {sortedChapters.map((chapter, index) => {
               const prog = chapter.progress;
-              const hasStarted = prog && (prog.readPagesCount > 0 || prog.isAudioFinished || prog.answeredQuestionsCount > 0);
+              const hasStarted = prog && (prog.readPagesCount > 0 || prog.isAudioFinished || prog.answeredQuestionsCount > 0 || prog.lastAudioPositionPercentage > 0);
               const isCompleted = prog?.isCompleted;
 
               // A chapter is enabled if it's already completed OR it's the first incomplete one
