@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { CheckCircle2, Pause, Play, Volume2, VolumeX, Repeat } from 'lucide-react';
 import { AdminService } from '../services/admin-service';
 import { useWaveSurfer } from '../hooks/useWaveSurfer';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
@@ -85,14 +85,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             </button>
             <div className='audio-status-badges'>
               {audioPlayCount > 0 && (
-                <>
-                  <div className='audio-finished-badge'>
-                    <CheckCircle2 size={16} /> <span>Áudio concluído</span>
-                  </div>
-                  <div className='audio-play-count-badge'>
-                    <span>Reproduções: {audioPlayCount}</span>
-                  </div>
-                </>
+                <div className='audio-play-count-badge' title={`${audioPlayCount} reproduções concluídas`}>
+                  <Repeat size={14} />
+                  <span>{audioPlayCount}</span>
+                </div>
+              )}
+              {audioPlayCount > 0 && (
+                <div className='audio-finished-badge'>
+                  <CheckCircle2 size={16} /> <span>Concluído</span>
+                </div>
               )}
             </div>
             <div className='speed-controls-buttons'>
