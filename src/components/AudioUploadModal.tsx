@@ -115,12 +115,12 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
 
                 {!showReplaceInput ? (
                   <div className="audio-actions">
-                    <button onClick={handleReplaceClick} className="btn-secondary">
+                    <button onClick={handleReplaceClick} className="btn-secondary btn-base">
                       <RefreshCw size={16} /> Substituir Áudio
                     </button>
                     <button 
                       onClick={handleRemoveAudio} 
-                      className="btn-danger"
+                      className="btn-danger btn-base"
                       disabled={isRemoving}
                     >
                       <Trash size={16} /> {isRemoving ? 'Removendo...' : 'Remover'}
@@ -143,13 +143,13 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
                       </div>
                     )}
                     <div className="replace-actions">
-                      <button onClick={cancelReplace} className="btn-secondary">
+                      <button onClick={cancelReplace} className="btn-secondary btn-base">
                         Cancelar
                       </button>
                       <button 
                         onClick={handleAudioUpload} 
                         disabled={!audioFile || isUploading}
-                        className="btn-primary"
+                        className="btn-primary btn-base"
                       >
                         <Upload size={16} /> {isUploading ? 'Enviando...' : 'Substituir'}
                       </button>
@@ -181,13 +181,13 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
 
         {!hasAudio && (
           <div className="modal-footer">
-            <button onClick={onClose} className="btn-secondary">
+            <button onClick={onClose} className="btn-secondary btn-base">
               Cancelar
             </button>
             <button 
               onClick={handleAudioUpload} 
               disabled={!audioFile || isUploading}
-              className="btn-primary"
+              className="btn-primary btn-base"
             >
               <Upload size={16} /> {isUploading ? 'Enviando...' : 'Upload'}
             </button>
@@ -196,7 +196,7 @@ const AudioUploadModal: React.FC<AudioUploadModalProps> = ({ chapter, onClose, o
 
         {hasAudio && !showReplaceInput && (
           <div className="modal-footer">
-            <button onClick={onClose} className="btn-primary">
+            <button onClick={onClose} className="btn-primary btn-base">
               Fechar
             </button>
           </div>

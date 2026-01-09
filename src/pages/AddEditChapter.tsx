@@ -233,7 +233,7 @@ const AddEditChapter: React.FC = () => {
         <button 
           onClick={handleSave} 
           disabled={isSaving}
-          className="btn-primary"
+          className="btn-primary btn-base"
         >
           <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar'}
         </button>

@@ -94,7 +94,7 @@ const HelpPage: React.FC = () => {
         </div>
 
         <div className="help-footer">
-          <button onClick={() => navigate('/dashboard')} className="btn-primary">
+          <button onClick={() => navigate('/dashboard')} className="btn-primary btn-base">
             Entendi, ir para o Dashboard
           </button>
           <p className="author-disclaimer">

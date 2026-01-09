@@ -74,7 +74,7 @@ const AdminDashboard: React.FC = () => {
           <BookOpen size={28} className="icon-primary" />
           <h1>Admin Dashboard</h1>
         </div>
-        <button onClick={() => navigate('/admin/chapter/new')} className="btn-primary">
+        <button onClick={() => navigate('/admin/chapter/new')} className="btn-primary btn-base">
           <Plus size={18} /> Novo Capítulo
         </button>
       </header>
@@ -89,7 +89,7 @@ const AdminDashboard: React.FC = () => {
           {chapters.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem' }}>
               <p style={{ color: 'var(--text-dim)' }}>Nenhum capítulo criado ainda.</p>
-              <button onClick={() => navigate('/admin/chapter/new')} className="btn-primary" style={{ marginTop: '1rem' }}>
+              <button onClick={() => navigate('/admin/chapter/new')} className="btn-primary btn-base" style={{ marginTop: '1rem' }}>
                 <Plus size={18} /> Criar Primeiro Capítulo
               </button>
             </div>

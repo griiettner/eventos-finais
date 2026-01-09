@@ -19,6 +19,7 @@ export interface Question {
   id: string;
   chapter_id: string;
   text: string;
+  potential_answers?: string[];
   order_index: number;
   created_at?: Timestamp;
 }
@@ -158,13 +159,31 @@ export class AdminService {
 
   // Question Management
   static async getChapterQuestions(chapterId: string): Promise<Question[]> {
-    return apiCall<Question[]>(`/api/chapters/${chapterId}/questions`);
+    const questions = await apiCall<any[]>(`/api/chapters/${chapterId}/questions`);
+    // Convert camelCase from API to snake_case for frontend
+    return questions.map(q => ({
+      id: q.id,
+      chapter_id: q.chapterId,
+      text: q.text,
+      potential_answers: q.potentialAnswers,
+      order_index: q.orderIndex,
+      created_at: q.createdAt
+    }));
   }
 
   static async createQuestion(question: Omit<Question, 'id' | 'created_at'>): Promise<string> {
+    // Convert snake_case to camelCase for API
+    const apiQuestion = {
+      text: question.text,
+      orderIndex: question.order_index,
+      ...(question.potential_answers && question.potential_answers.length > 0
+        ? { potentialAnswers: question.potential_answers }
+        : {})
+    };
+
     const result = await apiCall<Question>(`/api/chapters/${question.chapter_id}/questions`, {
       method: 'POST',
-      body: JSON.stringify(question)
+      body: JSON.stringify(apiQuestion)
     });
     return result.id;
   }

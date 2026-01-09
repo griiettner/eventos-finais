@@ -8,6 +8,7 @@ interface QuestionForm {
   id?: string;
   text: string;
   page_reference: string; // "Página X, Parágrafo Y"
+  potential_answers: string[]; // Array com 3 potenciais respostas
   order_index: number;
 }
 
@@ -44,18 +45,19 @@ const ChapterQuestions: React.FC = () => {
           const parts = q.text.split(' | Página: ');
           const questionText = parts[0];
           const pageRef = parts.length > 1 ? `Página ${parts[1]}` : '';
-          
+
           return {
             id: q.id,
             text: questionText,
             page_reference: pageRef,
+            potential_answers: q.potential_answers || ['', '', ''],
             order_index: q.order_index ?? index
           };
         });
         setQuestions(formattedQuestions);
       } else {
         // Start with one empty question
-        setQuestions([{ text: '', page_reference: '', order_index: 0 }]);
+        setQuestions([{ text: '', page_reference: '', potential_answers: ['', '', ''], order_index: 0 }]);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -71,6 +73,7 @@ const ChapterQuestions: React.FC = () => {
       {
         text: '',
         page_reference: '',
+        potential_answers: ['', '', ''],
         order_index: questions.length
       }
     ]);
@@ -84,6 +87,14 @@ const ChapterQuestions: React.FC = () => {
   const updateQuestion = (index: number, field: keyof QuestionForm, value: string) => {
     const newQuestions = [...questions];
     newQuestions[index] = { ...newQuestions[index], [field]: value };
+    setQuestions(newQuestions);
+  };
+
+  const updatePotentialAnswer = (questionIndex: number, answerIndex: number, value: string) => {
+    const newQuestions = [...questions];
+    const newAnswers = [...newQuestions[questionIndex].potential_answers];
+    newAnswers[answerIndex] = value;
+    newQuestions[questionIndex] = { ...newQuestions[questionIndex], potential_answers: newAnswers };
     setQuestions(newQuestions);
   };
 
@@ -103,13 +114,17 @@ const ChapterQuestions: React.FC = () => {
         const q = questions[i];
         if (q.text.trim()) {
           // Format: "Question text | Página: X, Parágrafo: Y" or just "Question text" if no page ref
-          const fullText = q.page_reference.trim() 
+          const fullText = q.page_reference.trim()
             ? `${q.text} | Página: ${q.page_reference.replace(/^Página\s*/i, '')}`
             : q.text;
-          
+
+          // Filter out empty potential answers
+          const potentialAnswers = q.potential_answers.filter(a => a.trim() !== '');
+
           await AdminService.createQuestion({
             chapter_id: id,
             text: fullText,
+            potential_answers: potentialAnswers.length > 0 ? potentialAnswers : undefined,
             order_index: i
           });
         }
@@ -139,7 +154,7 @@ const ChapterQuestions: React.FC = () => {
       <div className="admin-layout">
         <div style={{ textAlign: 'center', padding: '4rem' }}>
           <h2 style={{ color: 'var(--text-dim)' }}>Capítulo não encontrado</h2>
-          <button onClick={() => navigate('/admin')} className="btn-primary" style={{ marginTop: '1rem' }}>
+          <button onClick={() => navigate('/admin')} className="btn-primary btn-base" style={{ marginTop: '1rem' }}>
             Voltar ao Admin
           </button>
         </div>
@@ -160,7 +175,7 @@ const ChapterQuestions: React.FC = () => {
         <button 
           onClick={handleSave} 
           disabled={isSaving}
-          className="btn-primary"
+          className="btn-primary btn-base"
         >
           <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar'}
         </button>
@@ -174,7 +189,7 @@ const ChapterQuestions: React.FC = () => {
         >
           <div className="questions-page-intro">
             <p style={{ color: 'var(--text-dim)', marginBottom: '2rem' }}>
-              Adicione perguntas de estudo para o capítulo. Cada pergunta pode referenciar uma página e parágrafo específico.
+              Adicione perguntas de estudo para o capítulo. Cada pergunta pode referenciar uma página e parágrafo específico, e incluir até 3 respostas potenciais.
             </p>
           </div>
 
@@ -217,6 +232,24 @@ const ChapterQuestions: React.FC = () => {
                     />
                     <small className="field-hint">
                       Indique a página e parágrafo onde está a resposta (opcional)
+                    </small>
+                  </div>
+
+                  <div className="form-field">
+                    <label>Respostas Potenciais (opcional)</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {[0, 1, 2].map((answerIndex) => (
+                        <input
+                          key={answerIndex}
+                          type="text"
+                          value={question.potential_answers[answerIndex] || ''}
+                          onChange={(e) => updatePotentialAnswer(index, answerIndex, e.target.value)}
+                          placeholder={`Resposta potencial ${answerIndex + 1}`}
+                        />
+                      ))}
+                    </div>
+                    <small className="field-hint">
+                      Adicione até 3 respostas potenciais para ajudar no estudo
                     </small>
                   </div>
                 </div>

@@ -541,15 +541,22 @@ app.get('/api/chapters/:chapterId/questions', authMiddleware, async (req, res) =
 // Create question (admin only)
 app.post('/api/chapters/:chapterId/questions', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { text, orderIndex } = req.body;
-    
-    const docRef = await db.collection('questions').add({
+    const { text, orderIndex, potentialAnswers } = req.body;
+
+    const questionData = {
       chapterId: req.params.chapterId,
       text,
       orderIndex: orderIndex || 0,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    
+    };
+
+    // Only add potentialAnswers if it exists and is not empty
+    if (potentialAnswers && Array.isArray(potentialAnswers) && potentialAnswers.length > 0) {
+      questionData.potentialAnswers = potentialAnswers;
+    }
+
+    const docRef = await db.collection('questions').add(questionData);
+
     const doc = await docRef.get();
     res.status(201).json({ id: doc.id, ...doc.data() });
   } catch (error) {

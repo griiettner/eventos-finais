@@ -139,7 +139,7 @@ const LoginPage: React.FC = () => {
 
         <button
           onClick={handleEmailSignIn}
-          className='btn-primary w-full'
+          className='btn-primary btn-base w-full'
           disabled={kindeLoading}
         >
           {kindeLoading ? (

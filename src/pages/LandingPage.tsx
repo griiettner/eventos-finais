@@ -40,7 +40,7 @@ const LandingPage: React.FC = () => {
             </span>
           </div>
 
-          <Link to='/login' className='btn-primary start-btn'>
+          <Link to='/login' className='btn-primary btn-base start-btn'>
             Começar Agora
           </Link>
         </motion.div>

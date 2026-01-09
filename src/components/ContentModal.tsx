@@ -43,7 +43,7 @@ const ContentModal: React.FC<ContentModalProps> = ({ title, content, onClose }) 
         </div>
 
         <div className="modal-footer">
-          <button onClick={onClose} className="btn-primary">
+          <button onClick={onClose} className="btn-primary btn-base">
             Fechar
           </button>
         </div>

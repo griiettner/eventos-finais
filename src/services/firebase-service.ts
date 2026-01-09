@@ -71,6 +71,7 @@ export interface Question {
   id: string;
   chapter_id: string;
   text: string;
+  potential_answers?: string[];
   order_index: number;
   created_at: Timestamp;
 }

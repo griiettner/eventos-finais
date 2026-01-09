@@ -710,12 +710,12 @@ button {
   box-shadow: 0 10px 20px rgba(0,0,0,0.2);
 }
 
-.social-btn.apple { 
+.social-btn.apple-btn { 
   background: #fff; 
   color: #000; 
 }
 
-.social-btn.apple:hover:not(:disabled) { 
+.social-btn.apple-btn:hover:not(:disabled) { 
   background: #f0f0f0; 
 }
 
@@ -743,7 +743,7 @@ button {
 .divider span {
   position: relative;
   background: #0a0a0a;
-  padding: 0 var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-lg);
   color: var(--text-dim);
   font-size: 0.85rem;
 }
@@ -1721,34 +1721,34 @@ button {
   cursor: pointer;
 }
 
-.action-btn.text {
+.action-btn.btn-text {
   background: var(--info-bg);
   color: var(--info);
   border-color: var(--info-border);
 }
 
-.action-btn.text:hover {
+.action-btn.btn-text:hover {
   background: rgba(59, 130, 246, 0.2);
   border-color: rgba(59, 130, 246, 0.4);
 }
 
-.action-btn.audio {
+.action-btn.btn-audio {
   background: rgba(255,255,255,0.05); 
   color: #fff; 
   border: 1px solid var(--glass-border); 
 }
 
-.action-btn.audio:hover {
+.action-btn.btn-audio:hover {
   background: rgba(255,255,255,0.1); 
 }
 
-.action-btn.questions {
+.action-btn.btn-questions {
   background: var(--warning-bg);
   color: var(--warning);
   border-color: var(--warning-border);
 }
 
-.action-btn.questions:hover {
+.action-btn.btn-questions:hover {
   background: rgba(249, 115, 22, 0.2);
   border-color: rgba(249, 115, 22, 0.4);
 }
@@ -1763,6 +1763,35 @@ button {
 .delete-icon-btn:hover {
   color: var(--danger);
   background: var(--danger-bg);
+}
+
+.bottom-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-top: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.tab-btn.active {
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--primary);
+  border-top: 2px solid var(--primary);
 }
 
 /* ===================================
@@ -1855,6 +1884,13 @@ button {
   font-family: inherit;
   font-size: 0.95rem;
   transition: var(--transition);
+  width: calc(100% - var(--spacing-2xl));
+  box-sizing: content-box;
+}
+
+.form-field textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
 .form-field input:focus, .form-field textarea:focus {
@@ -3038,3 +3074,93 @@ button {
     line-height: 1.6; 
   }
 }
+
+
+/* Help Page Styles */
+.help-page-layout {
+  min-height: 100vh;
+  background-color: var(--bg-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.help-content-container {
+  flex: 1;
+  padding: 2rem 1rem;
+  max-width: 900px;
+  margin:80px 0 auto 0;
+  width: 100%;
+}
+
+.help-intro {
+  text-align: center;
+  padding: 3rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.help-icon-main {
+  color: var(--primary);
+  filter: drop-shadow(0 0 10px var(--primary-glow));
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.help-card {
+  padding: 2rem;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+  transition: var(--transition);
+}
+
+.help-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary);
+}
+
+.help-card-icon {
+  margin-bottom: 0.5rem;
+}
+
+.help-card h4 {
+  color: var(--primary);
+  font-size: 1.2rem;
+}
+
+.help-footer {
+  text-align: center;
+  padding-bottom: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.author-disclaimer {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+@media (max-width: 600px) {
+  .help-intro {
+    padding: 2rem 1rem;
+  }
+  
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
